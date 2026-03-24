@@ -1,16 +1,17 @@
-from passlib.context import CryptContext
+import bcrypt
 from sqlmodel import Session, select
-from models import User
-from database import engine
+from app.models import User
+from app.core.database import engine
 from fasthtml.common import RedirectResponse
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def authenticate_user(username, password):
     with Session(engine) as session:

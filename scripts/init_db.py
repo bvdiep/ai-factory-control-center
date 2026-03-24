@@ -1,7 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlmodel import Session, select
-from database import engine, create_db_and_tables
-from models import Role, User, Project, UserProject
-from auth import get_password_hash
+from app.core.database import engine, create_db_and_tables
+from app.models import Role, User, Project, UserProject
+from app.core.auth import get_password_hash
 
 def seed_db():
     create_db_and_tables()

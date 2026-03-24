@@ -6,8 +6,8 @@ Hệ thống quản lý điều khiển cho AI Factory, xây dựng bằng FastH
 
 1. Tạo môi trường ảo (virtual environment):
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Cài đặt các thư viện cần thiết:
@@ -17,14 +17,14 @@ pip install -r requirements.txt
 
 3. Khởi tạo cơ sở dữ liệu:
 ```bash
-python init_db.py
+python scripts/init_db.py
 ```
 
 ## Chạy ứng dụng
 
 ### Chạy trực tiếp
 ```bash
-python main.py
+python app/main.py
 ```
 Ứng dụng sẽ chạy mặc định tại `http://localhost:5001` (hoặc cổng cấu hình trong FastHTML).
 
@@ -35,10 +35,10 @@ pm2 start ecosystem.config.js
 ```
 
 ## Cấu trúc dự án
-- `main.py`: Entry point của ứng dụng FastHTML.
-- `models.py`: Định nghĩa các bảng dữ liệu bằng SQLModel.
-- `database.py`: Cấu hình kết nối cơ sở dữ liệu.
-- `auth.py`: Xử lý xác thực người dùng.
-- `init_db.py`: Script khởi tạo và seed dữ liệu ban đầu.
+- `app/main.py`: Entry point của ứng dụng FastHTML.
+- `app/models/__init__.py`: Định nghĩa các bảng dữ liệu bằng SQLModel.
+- `app/core/database.py`: Cấu hình kết nối cơ sở dữ liệu.
+- `app/core/auth.py`: Xử lý xác thực người dùng.
+- `scripts/init_db.py`: Script khởi tạo và seed dữ liệu ban đầu.
 - `requirements.txt`: Danh sách các thư viện phụ thuộc.
 - `ecosystem.config.js`: Cấu hình chạy PM2.

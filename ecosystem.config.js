@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "ai-factory-control-center",
       script: "python3",
-      args: "main.py",
+      args: "app/main.py",
       interpreter: "python3",
       env: {
         PORT: 5001,

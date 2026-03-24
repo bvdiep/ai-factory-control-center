@@ -1,8 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fasthtml.common import *
 from sqlmodel import Session, select
-from database import engine
-from models import User, Project, Role
-from auth import authenticate_user, auth_beforeware
+from app.core.database import engine
+from app.models import User, Project, Role
+from app.core.auth import authenticate_user, auth_beforeware
 
 app, rt = fast_app(
     before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico']),
