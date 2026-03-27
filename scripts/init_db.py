@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlmodel import Session, select
 from app.core.database import engine, create_db_and_tables
-from app.models import Role, User, Project, UserProject
+from app.models import Role, User, Project
 from app.core.auth import get_password_hash
 
 def seed_db():
@@ -18,7 +18,7 @@ def seed_db():
 
         # Create Roles
         roles_data = [
-            "Admin", "Senior", "Junior", "DevOps", "BA", "QC", "QA", "CEO", "Account"
+            "Admin", "Senior", "Junior", "DevOps", "BA", "QC", "QA", "CEO", "Account", "PM"
         ]
         roles = {}
         for r_name in roles_data:
@@ -43,25 +43,20 @@ def seed_db():
         p1 = Project(
             name="AI Factory",
             description="Main control center",
-            path="/home/dd/work/diep/ai-factory-control-center"
+            path="/home/dd/work/diep/ai-factory-control-center",
+            user_id=admin_user.id
         )
         p2 = Project(
             name="Data Pipeline",
             description="ETL pipeline for AI models",
-            path="/home/dd/work/diep/data-pipeline"
+            path="/home/dd/work/diep/data-pipeline",
+            user_id=admin_user.id
         )
         session.add(p1)
         session.add(p2)
         session.commit()
         session.refresh(p1)
         session.refresh(p2)
-        
-        # Link Projects to Admin
-        up1 = UserProject(user_id=admin_user.id, project_id=p1.id)
-        up2 = UserProject(user_id=admin_user.id, project_id=p2.id)
-        session.add(up1)
-        session.add(up2)
-        session.commit()
         
         print("Database seeded successfully.")
 

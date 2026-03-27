@@ -2,10 +2,6 @@ from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
 
-class UserProject(SQLModel, table=True):
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id", primary_key=True)
-    project_id: Optional[int] = Field(default=None, foreign_key="project.id", primary_key=True)
-
 class Role(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
@@ -22,7 +18,7 @@ class User(SQLModel, table=True):
     status: str = Field(default="active")
     
     role: Optional[Role] = Relationship(back_populates="users")
-    projects: List["Project"] = Relationship(back_populates="users", link_model=UserProject)
+    projects: List["Project"] = Relationship(back_populates="user")
 
 class Project(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -32,8 +28,9 @@ class Project(SQLModel, table=True):
     config_override: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="active")
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
-    users: List[User] = Relationship(back_populates="projects", link_model=UserProject)
+    user: Optional[User] = Relationship(back_populates="projects")
     phases: List["Phase"] = Relationship(back_populates="project", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Phase(SQLModel, table=True):
@@ -43,7 +40,7 @@ class Phase(SQLModel, table=True):
     role_id: int = Field(foreign_key="role.id", nullable=False)
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     skill: Optional[str] = Field(default=None)
-    status: str = Field(default="pending") # pending, init, processing, cancel, done
+    status: str = Field(default="pending") # pending, init, processing, processed, cancel, done
     logging: Optional[str] = Field(default=None)
     token_in: int = Field(default=0)
     token_out: int = Field(default=0)

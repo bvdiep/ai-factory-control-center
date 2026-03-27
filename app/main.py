@@ -133,7 +133,14 @@ def project_detail(id: int, session):
         
         # Check if user has access to project
         is_admin = user.role and user.role.name == 'Admin'
-        if not is_admin and project not in user.projects:
+        is_pm = project.user_id == user.id
+        
+        # Also allow access if user is assigned to any phase in the project
+        user_assigned_to_any_phase = db_session.exec(
+            select(Phase).where(Phase.project_id == id, Phase.user_id == user_id)
+        ).first() is not None
+
+        if not (is_admin or is_pm or user_assigned_to_any_phase):
              return RedirectResponse('/dashboard', status_code=303)
 
         phases = db_session.exec(select(Phase).where(Phase.project_id == id).order_by(Phase.order)).all()
@@ -268,6 +275,19 @@ def phase_detail(project_id: int, phase_id: int, session):
                     P(Strong("Role: "), phase.role.name if phase.role else "N/A"),
                     P(Strong("User: "), phase.user.username if phase.user else "Unassigned"),
                     P(Strong("Status: "), phase.status),
+                    Div(
+                        # PM buttons
+                        Group(
+                            Button("Cancel", onclick="alert('Under construction')", cls="outline"),
+                            Button("Approve", onclick="alert('Under construction')", cls="outline"),
+                            Button("Init", onclick="alert('Under construction')", cls="outline"),
+                        ) if user.id == project.user_id else None,
+                        # Phase user button
+                        Group(
+                            Button("Execute", onclick="alert('Under construction')"),
+                        ) if user.id == phase.user_id else None,
+                        style="margin-top: 1rem;"
+                    )
                 )
             )
         )

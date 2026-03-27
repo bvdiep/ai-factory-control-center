@@ -31,9 +31,8 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - **Các thực thể (Entities)**:
   - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status).
   - **Role**: Định nghĩa vai trò của người dùng (name, system_prompt).
-  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, status).
-  - **UserProject**: Bảng trung gian (Junction table) thể hiện mối quan hệ nhiều-nhiều (Many-to-Many) giữa User và Project.
-  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order).
+  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM).
+  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
 
 ### 2.4. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
@@ -69,7 +68,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - Truy cập tại route `/dashboard` (yêu cầu đã đăng nhập).
 - Hiển thị lời chào mừng với tên người dùng.
 - Hiển thị Vai trò (Role) hiện tại của người dùng.
-- Liệt kê danh sách các Dự án (Projects) mà người dùng được phân quyền truy cập, bao gồm:
+- Liệt kê danh sách các Dự án (Projects) mà người dùng là Project Manager (PM), bao gồm:
   - Tên dự án.
   - Mô tả dự án.
   - Đường dẫn (Path) của dự án.
@@ -99,7 +98,9 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Hiển thị thông tin cơ bản của dự án (Tên, Mô tả, Path, Trạng thái).
   - Liệt kê danh sách các giai đoạn (Phases) của dự án, sắp xếp theo thứ tự (`order`).
 - **Quản lý Phase**:
-  - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Logging, Metrics) cùng thông tin Dự án liên quan qua nút "Details".
+  - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Logging, Metrics) cùng thông tin Dự án liên quan qua nút "Details". Tại đây, hệ thống cung cấp các nút thao tác dựa trên vai trò (hiện đang ở chế độ chờ phát triển - "Under construction"):
+    - Nếu người dùng là PM của dự án: Có các nút **Cancel**, **Approve**, **Init**.
+    - Nếu người dùng được gán cho phase đó: Có nút **Execute**.
   - Thêm mới Phase vào dự án: Nhập Order, Mission, Chọn Role và User (tùy chọn).
   - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `pending`).
   - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `pending`.
