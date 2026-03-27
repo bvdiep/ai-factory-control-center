@@ -33,6 +33,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - **Role**: Định nghĩa vai trò của người dùng (name, system_prompt).
   - **Project**: Quản lý thông tin dự án (name, description, path, config_override, status).
   - **UserProject**: Bảng trung gian (Junction table) thể hiện mối quan hệ nhiều-nhiều (Many-to-Many) giữa User và Project.
+  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order).
 
 ### 2.4. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
@@ -91,6 +92,19 @@ Hệ thống được chia thành các khối chức năng chính sau:
 ### 3.5. Bảo vệ Route (Route Protection)
 - Hệ thống sử dụng `Beforeware` để tự động kiểm tra session của người dùng trước khi truy cập bất kỳ trang nào (ngoại trừ `/login`, `/static`, `/favicon.ico`).
 - Nếu chưa đăng nhập, người dùng sẽ bị buộc chuyển hướng về trang `/login`.
+
+### 3.6. Chức năng Quản lý Dự án và Phase (Project & Phase Management)
+- **Chi tiết Dự án**: 
+  - Truy cập thông qua liên kết tại tên dự án ở trang Dashboard.
+  - Hiển thị thông tin cơ bản của dự án (Tên, Mô tả, Path, Trạng thái).
+  - Liệt kê danh sách các giai đoạn (Phases) của dự án, sắp xếp theo thứ tự (`order`).
+- **Quản lý Phase**:
+  - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Logging, Metrics) cùng thông tin Dự án liên quan qua nút "Details".
+  - Thêm mới Phase vào dự án: Nhập Order, Mission, Chọn Role và User (tùy chọn).
+  - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `pending`).
+  - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `pending`.
+  - Cảnh báo: Hệ thống hiển thị cảnh báo (non-blocking) qua thông báo alert nếu người dùng được gán cho Phase có vai trò (Role) không khớp với vai trò yêu cầu của Phase đó.
+
 
 ## 4. Môi trường triển khai
 - **Ngôn ngữ**: Python 3

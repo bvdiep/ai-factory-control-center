@@ -34,3 +34,23 @@ class Project(SQLModel, table=True):
     status: str = Field(default="active")
     
     users: List[User] = Relationship(back_populates="projects", link_model=UserProject)
+    phases: List["Phase"] = Relationship(back_populates="project", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+class Phase(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    mission: str = Field(nullable=False)
+    project_id: int = Field(foreign_key="project.id", nullable=False)
+    role_id: int = Field(foreign_key="role.id", nullable=False)
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    skill: Optional[str] = Field(default=None)
+    status: str = Field(default="pending") # pending, init, processing, cancel, done
+    logging: Optional[str] = Field(default=None)
+    token_in: int = Field(default=0)
+    token_out: int = Field(default=0)
+    cache_hit: int = Field(default=0)
+    reasoning: int = Field(default=0)
+    order: int = Field(default=0)
+    
+    project: Project = Relationship(back_populates="phases")
+    role: Role = Relationship()
+    user: Optional[User] = Relationship()
