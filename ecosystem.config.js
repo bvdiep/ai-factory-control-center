@@ -2,9 +2,8 @@ module.exports = {
   apps: [
     {
       name: "ai-factory-control-center",
-      script: "python3",
-      args: "app/main.py",
-      interpreter: "python3",
+      script: "app/main.py",
+      interpreter: "./.venv/bin/python",
       env: {
         PORT: 5001,
         NODE_ENV: "production"

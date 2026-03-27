@@ -8,20 +8,48 @@ from app.core.database import engine
 from app.models import User, Project, Role
 from app.core.auth import authenticate_user, auth_beforeware
 
+css = Style('''
+    .login-page {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+    }
+    .login-container {
+        width: 100%;
+        max-width: 400px;
+        padding: 2rem;
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        background: var(--pico-card-background-color);
+        box-shadow: var(--pico-card-sectioning-background-color) 0 1px 10px;
+    }
+    .login-container h1 {
+        text-align: center;
+    }
+''')
+
 app, rt = fast_app(
+    hdrs=(css,),
     before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico']),
     secret_key="super-secret-key"
 )
 
 @rt('/login', methods=['GET'])
 def get_login():
-    return Titled("Login",
-        Form(
-            Input(type="text", name="username", placeholder="Username", required=True),
-            Input(type="password", name="password", placeholder="Password", required=True),
-            Button("Login", type="submit"),
-            action="/login", method="post"
-        )
+    return Title("Login"), Main(
+        Div(
+            H1("Login"),
+            Form(
+                Input(type="text", name="username", placeholder="Username", required=True),
+                Input(type="password", name="password", placeholder="Password", required=True),
+                Button("Login", type="submit"),
+                action="/login", method="post"
+            ),
+            cls="login-container"
+        ),
+        cls="login-page"
     )
 
 @rt('/login', methods=['POST'])
@@ -30,9 +58,14 @@ def post_login(username: str, password: str, session):
     if user:
         session['user_id'] = user.id
         return RedirectResponse('/dashboard', status_code=303)
-    return Titled("Login Failed",
-        P("Invalid username or password."),
-        A("Try again", href="/login")
+    return Title("Login Failed"), Main(
+        Div(
+            H1("Login Failed"),
+            P("Invalid username or password."),
+            A("Try again", href="/login", cls="contrast"),
+            cls="login-container"
+        ),
+        cls="login-page"
     )
 
 @rt('/logout', methods=['GET'])
