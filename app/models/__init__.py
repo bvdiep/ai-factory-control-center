@@ -16,8 +16,10 @@ class Role(SQLModel, table=True):
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
+    name: Optional[str] = None
     hashed_password: str
     role_id: Optional[int] = Field(default=None, foreign_key="role.id")
+    status: str = Field(default="active")
     
     role: Optional[Role] = Relationship(back_populates="users")
     projects: List["Project"] = Relationship(back_populates="users", link_model=UserProject)

@@ -18,6 +18,8 @@ def authenticate_user(username, password):
         user = session.exec(select(User).where(User.username == username)).first()
         if not user:
             return False
+        if user.status != "active":
+            return False
         if not verify_password(password, user.hashed_password):
             return False
         return user

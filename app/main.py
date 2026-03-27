@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from app.core.database import engine
 from app.models import User, Project, Role
 from app.core.auth import authenticate_user, auth_beforeware
+from app.routers.users import setup_user_routes
 
 css = Style('''
     .login-page {
@@ -36,6 +37,19 @@ app, rt = fast_app(
     secret_key="super-secret-key"
 )
 
+def render_nav(user=None):
+    nav_items = [Li(A("Home", href="/dashboard", cls="secondary"))]
+    if user and user.role and user.role.name == 'Admin':
+        nav_items.append(Li(A("Users", href="/users", cls="secondary")))
+    nav_items.append(Li(A("Logout", href="/logout", cls="secondary")))
+    
+    return Nav(
+        Ul(Li(A(Strong("AI Factory"), href="/dashboard", cls="secondary"))),
+        Ul(*nav_items),
+        cls="container"
+    )
+
+setup_user_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
@@ -73,6 +87,7 @@ def logout(session):
     session.clear()
     return RedirectResponse('/login', status_code=303)
 
+
 @rt('/dashboard', methods=['GET'])
 def dashboard(session):
     user_id = session.get('user_id')
@@ -93,15 +108,16 @@ def dashboard(session):
             ) for p in projects]
         )
         
-        return Titled("Dashboard",
+        return Title("Dashboard"), render_nav(user), Main(
+            H1("Dashboard"),
             Div(
                 H2(f"Welcome, {user.username}!"),
                 P(f"Your Role: {role.name if role else 'None'}"),
-                A("Logout", href="/logout"),
                 Hr(),
                 H3("Your Projects"),
                 project_list if projects else P("No projects assigned.")
-            )
+            ),
+            cls="container"
         )
 
 @rt('/')
