@@ -2,10 +2,12 @@ from fasthtml.common import *
 from starlette.responses import Response
 from sqlmodel import Session, select, or_, func, col
 from app.core.database import engine
+from app.core.config import settings
 from app.models import User, Project, Role
 from datetime import datetime
 import json
 import re
+import os
 
 
 def get_project_by_id(db_session, project_id):
@@ -83,7 +85,7 @@ def render_edit_modal(users, error=None, values=None):
             Input(type="hidden", name="id", id="edit-id", value=v.get("id", "")),
             Label("Name", Input(name="name", id="edit-name", required=True, value=v.get("name", ""))),
             Label("Description", Textarea(v.get("description", ""), name="description", id="edit-description")),
-            Label("Path", Input(name="path", id="edit-path", required=True, value=v.get("path", ""))),
+            Label("Path", Input(name="path", id="edit-path", required=True, value=v.get("path", ""), readonly=True)),
             Label("Owner", Select(
                 Option("Select Owner", value=""),
                 *[Option(u.username, value=u.id) for u in users],
@@ -237,6 +239,10 @@ def setup_project_routes(rt, render_nav):
             )
             db_session.add(new_project)
             db_session.commit()
+
+            project_dir = os.path.join(settings.PROJECT_ROOT, path)
+            os.makedirs(project_dir, exist_ok=True)
+
             return Response(content="", headers={"HX-Redirect": "/projects"})
 
     @rt('/projects/edit', methods=['POST'])
@@ -246,17 +252,8 @@ def setup_project_routes(rt, render_nav):
             project = get_project_by_id(db_session, id)
             if not project: return "Project not found"
             
-            users = db_session.exec(select(User)).all()
-            error = validate_project_path(path, db_session, project_id=id)
-            if error:
-                return to_xml(render_edit_modal(users, error=error, values={
-                    "id": id, "name": name, "description": description, "path": path,
-                    "user_id": user_id, "status": status
-                }))
-            
             project.name = name
             project.description = description
-            project.path = path
             project.user_id = int(user_id) if user_id else None
             project.status = status
             project.updated_at = datetime.utcnow()
