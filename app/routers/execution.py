@@ -29,7 +29,7 @@ def setup_execution_routes(rt, render_nav):
             os.makedirs(log_dir, exist_ok=True)
 
             executions = db_session.exec(
-                select(Execution).where(Execution.phase_id == phase_id).order_by(Execution.id.desc())
+                select(Execution).where(Execution.phase_id == phase_id, Execution.project_id == project_id).order_by(Execution.id.desc())
             ).all()
 
             total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
@@ -56,19 +56,18 @@ def setup_execution_routes(rt, render_nav):
             execution = executions[0] if executions else None
 
             if not execution:
-                execution = Execution(phase_id=phase_id)
+                execution = Execution(phase_id=phase_id, project_id=project_id)
                 db_session.add(execution)
                 db_session.commit()
                 db_session.refresh(execution)
 
             header_card = Article(
                 Grid(
-                    Div(Strong("Project: "), project.name, style="flex: 0 0 auto;"),
-                    Div(Strong("Workspace: "), project.path, style="flex: 1; min-width: 300px; word-break: break-all;"),
+                    Div(Strong("Project: "), project.name),
+                    Div(Strong("Workspace: "), project.path),
                     Div(
-                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'completed' else '#3b82f6' if phase.status == 'running' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;")
-                    ),
-                    style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;"
+                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'processed' else '#3b82f6' if phase.status == 'running' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;")
+                    )
                 )
             )
 
@@ -298,7 +297,7 @@ def setup_execution_routes(rt, render_nav):
             project = db_session.get(Project, project_id)
 
             execution = db_session.exec(
-                select(Execution).where(Execution.phase_id == phase_id).order_by(Execution.id.desc())
+                select(Execution).where(Execution.phase_id == phase_id, Execution.project_id == project_id).order_by(Execution.id.desc())
             ).first()
 
             if not execution:
@@ -357,7 +356,7 @@ def setup_execution_routes(rt, render_nav):
     async def get_execution_status(project_id: int, phase_id: int, execution_id: int, session):
         with Session(engine) as db_session:
             executions = db_session.exec(
-                select(Execution).where(Execution.phase_id == phase_id).order_by(Execution.id.desc())
+                select(Execution).where(Execution.phase_id == phase_id, Execution.project_id == project_id).order_by(Execution.id.desc())
             ).all()
             
             total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
@@ -395,7 +394,7 @@ def setup_execution_routes(rt, render_nav):
                 return "Unauthorized", 401
 
             execution = db_session.get(Execution, execution_id)
-            if not execution or execution.phase_id != phase_id:
+            if not execution or execution.phase_id != phase_id or execution.project_id != project_id:
                 return "Not found", 404
 
             messages = db_session.exec(
@@ -451,7 +450,7 @@ def setup_execution_routes(rt, render_nav):
                 return "Unauthorized", 401
 
             execution = db_session.get(Execution, execution_id)
-            if not execution or execution.phase_id != phase_id:
+            if not execution or execution.phase_id != phase_id or execution.project_id != project_id:
                 return "Not found", 404
 
             execution.status = "completed"

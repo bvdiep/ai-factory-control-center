@@ -11,7 +11,7 @@
     - Phase có thuộc tính Role (required), ý nghĩa là phase đó phù hợp với user của role đó thực thi.
     - Phase có thể assign cho user (optional). Nếu role của user khác role của phase thì có thông báo dạng warning (non-blocking)
     - Trường skill (default null): text sẽ lưu trữ kĩ năng cần thiết để thực thi.
-    - Status: mặc định là "pending", các giá trị có thể là pending, init, processing, cancel, done
+    - Status: mặc định là "Pending", các giá trị có thể là Pending, Start, Processing, Processed, Cancel, Done
     - Logging (text): ghi lại một số log theo dõi phase
     - Token in, token out, cache hit, reasoning: các thông số của openhands khi thực hiện task.
     - Order: thứ tự của phase trong Project.
@@ -22,6 +22,6 @@
     - Quản lý Phase:
         - Sử dụng luôn màn hình detail project để quản lý phase.
         - Cho phép thêm một phase vào dự án
-        - So sánh order, nếu có một phase với order ngay sau nó (tức có order lớn hơn đầu tiên) mà status của nó khác "pending" thì không cho phép thêm.
+        - So sánh order, nếu có một phase với order ngay sau nó (tức có order lớn hơn đầu tiên) mà status của nó khác "Pending" thì không cho phép thêm.
         - Chỉ cho phép sửa với phase ở trạng thái Pending. Không cho phép sửa phase ở các trạng thái khác.
 - Cập nhật tài liệu /plans/technical_document.md

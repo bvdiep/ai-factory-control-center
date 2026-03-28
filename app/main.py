@@ -312,7 +312,7 @@ def dashboard(session):
                 P("- Admin: tạo ra các project, gán project cho PM."),
                 P("- PM: Phân chia project thành các phases. Không cần phải có tất cả các phase ngay từ đầu. Phase mới sinh ra sẽ ở trạng thái Pending, không member nào được can thiệp."),
                 P("- PM kích hoạt một phase để member có thể làm bằng cách chuyển status của nó sang Start."),
-                P("- Khi được kích hoạt thì member mới được thao tác: member làm việc với Agent AI để hoàn thành công việc của mình."),
+                P("- Khi được kích hoạt thì member mới được thao tác: member làm việc với Agent AI để hoàn thành công việc của mình. Status của phase là Processing. Member chuyển thành Processed khi kết thúc."),
                 P("- PM sẽ review để Approve (chuyển status thành Done)"),
                 Hr(),
                 H3("Your Projects"),
@@ -356,7 +356,7 @@ def project_detail(id: int, session):
             Td(p.user.username if p.user else "Unassigned"),
             Td(p.status),
             Td(A("Details", href=f"/projects/{id}/phases/{p.id}", cls="button outline")),
-            Td(A("Edit", href=f"/projects/{id}/phases/{p.id}/edit", cls="button") if p.status == 'pending' else "")
+            Td(A("Edit", href=f"/projects/{id}/phases/{p.id}/edit", cls="button") if p.status == 'Pending' else "")
         ) for p in phases]
         
         add_phase_modal = Dialog(
@@ -431,7 +431,7 @@ def add_phase(project_id: int, order: int, mission: str, role_id: int, user_id: 
             .order_by(Phase.order)
         ).first()
         
-        if next_phase and next_phase.status != 'pending':
+        if next_phase and next_phase.status != 'Pending':
             return Title("Error"), Main(H1("Error"), P("Cannot add phase before a phase that is already started/done."), A("Back", href=f"/projects/{project_id}"))
 
         new_phase = Phase(
@@ -441,7 +441,7 @@ def add_phase(project_id: int, order: int, mission: str, role_id: int, user_id: 
             role_id=role_id,
             user_id=int(user_id) if user_id else None,
             skill=None,
-            status="pending"
+            status="Pending"
         )
         db_session.add(new_phase)
         db_session.commit()
@@ -457,7 +457,7 @@ def phase_detail(project_id: int, phase_id: int, session):
         if not phase: return RedirectResponse(f'/projects/{project_id}', status_code=303)
         
         executions = db_session.exec(
-            select(Execution).where(Execution.phase_id == phase_id)
+            select(Execution).where(Execution.phase_id == phase_id, Execution.project_id == project_id)
         ).all()
 
         total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
@@ -534,7 +534,7 @@ def edit_phase_get(project_id: int, phase_id: int, session):
     with Session(engine) as db_session:
         user = db_session.get(User, user_id)
         phase = db_session.get(Phase, phase_id)
-        if not phase or phase.status != 'pending':
+        if not phase or phase.status != 'Pending':
             return RedirectResponse(f'/projects/{project_id}', status_code=303)
         
         roles = db_session.exec(select(Role)).all()
@@ -582,7 +582,7 @@ def edit_phase_get(project_id: int, phase_id: int, session):
 def edit_phase_post(project_id: int, phase_id: int, order: int, mission: str, role_id: int, user_id: str, skill: str, session):
     with Session(engine) as db_session:
         phase = db_session.get(Phase, phase_id)
-        if not phase or phase.status != 'pending':
+        if not phase or phase.status != 'Pending':
             return RedirectResponse(f'/projects/{project_id}', status_code=303)
         
         phase.order = order

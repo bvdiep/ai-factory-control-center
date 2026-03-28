@@ -2,13 +2,39 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, text
 from app.core.database import engine, create_db_and_tables
 from app.models import Role, User, Project
 from app.core.auth import get_password_hash
 
+def migrate_execution_add_project_id():
+    """Add project_id column to execution table and backfill from phase."""
+    with engine.connect() as conn:
+        # Check if column already exists
+        result = conn.execute(text("PRAGMA table_info(execution)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'project_id' in columns:
+            print("Column 'project_id' already exists in execution table.")
+            return
+
+        print("Adding project_id column to execution table...")
+        # Add column with default value first (SQLite requires a default for NOT NULL add)
+        conn.execute(text("ALTER TABLE execution ADD COLUMN project_id INTEGER"))
+        conn.commit()
+
+        # Backfill project_id from phase table
+        conn.execute(text(
+            "UPDATE execution SET project_id = ("
+            "  SELECT phase.project_id FROM phase WHERE phase.id = execution.phase_id"
+            ")"
+        ))
+        conn.commit()
+
+        print("Backfilled project_id for existing execution records.")
+
 def seed_db():
     create_db_and_tables()
+    migrate_execution_add_project_id()
     
     with Session(engine) as session:
         # Check if already seeded

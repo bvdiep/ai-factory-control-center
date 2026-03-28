@@ -35,6 +35,7 @@ class Project(SQLModel, table=True):
     
     user: Optional[User] = Relationship(back_populates="projects")
     phases: List["Phase"] = Relationship(back_populates="project", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    executions: List["Execution"] = Relationship(back_populates="project")
 
 class Phase(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -43,7 +44,7 @@ class Phase(SQLModel, table=True):
     role_id: int = Field(foreign_key="role.id", nullable=False)
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     skill: Optional[str] = Field(default=None)
-    status: str = Field(default="pending") # pending, init, processing, processed, cancel, done
+    status: str = Field(default="Pending") # Pending, Start, Processing, Processed, Cancel, Done
     logging: Optional[str] = Field(default=None)
     token_in: int = Field(default=0)
     token_out: int = Field(default=0)
@@ -61,7 +62,8 @@ class Phase(SQLModel, table=True):
 class Execution(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     phase_id: int = Field(foreign_key="phase.id", nullable=False)
-    status: str = Field(default="pending")
+    project_id: int = Field(foreign_key="project.id", nullable=False)
+    status: str = Field(default="Pending")
     start_date: datetime = Field(default_factory=datetime.utcnow)
     total_input_tokens: int = Field(default=0)
     total_output_tokens: int = Field(default=0)
@@ -74,6 +76,7 @@ class Execution(SQLModel, table=True):
     model_name: Optional[str] = Field(default=None)
 
     phase: Phase = Relationship()
+    project: Project = Relationship(back_populates="executions")
     messages: List["ExecutionMessage"] = Relationship(back_populates="execution", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class ExecutionMessage(SQLModel, table=True):

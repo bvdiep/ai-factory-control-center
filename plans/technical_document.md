@@ -45,8 +45,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
   - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status, created_at, updated_at).
   - **Role**: Định nghĩa vai trò của người dùng (name, skill).
   - **Project**: Quản lý thông tin dự án (name, description, path, config_override, created_at, updated_at, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM). Trường `path` lưu tên thư mục tương đối (duy nhất, không khoảng trắng, chỉ bao gồm chữ cái, số, gạch dưới, gạch ngang, dấu chấm).
-  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
-  - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name).
+  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `Pending`, `Start`, `Processing`, `Processed`, `Cancel`, `Done`.
+  - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, project_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name). Trường `project_id` là foreign key trực tiếp đến `project.id`, giúp xác định Execution thuộc Project nào mà không cần join qua Phase. Khi tạo Execution mới, `project_id` luôn được set đồng thời với `phase_id`.
   - **ExecutionMessage**: Lưu trữ lịch sử hội thoại và log của mỗi lần thực thi (execution_id, role, content, metrics).
 
 ### 2.6. Khối Cơ sở dữ liệu (Database Core)
@@ -144,8 +144,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
     - Nếu người dùng là PM của dự án: Có các nút **Cancel**, **Approve**, **Init**.
     - Nếu người dùng được gán cho phase đó: Có nút **Execute** dẫn sang trang thực thi (Execution).
   - Thêm mới Phase vào dự án: Nhập Order, Mission, Chọn Role và User (tùy chọn).
-  - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `pending`).
-  - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `pending`.
+  - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `Pending`).
+  - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `Pending`.
   - Cảnh báo: Hệ thống hiển thị cảnh báo (non-blocking) qua thông báo alert nếu người dùng được gán cho Phase có vai trò (Role) không khớp với vai trò yêu cầu của Phase đó.
 
 ### 3.7. Chức năng Quản lý Dự án (Project Management - Admin Only)
