@@ -109,6 +109,19 @@ css = Style('''
         align-items: center;
         gap: 0.4rem;
     }
+    .console-log {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        border: 1px solid #333;
+    }
 ''')
 
 app, rt = fast_app(
@@ -367,7 +380,7 @@ def phase_detail(project_id: int, phase_id: int, session):
                         ) if user.id == project.user_id else None,
                         # Phase user button
                         Group(
-                            Button("Execute", onclick="alert('Under construction')"),
+                            A(Button("Execute"), href=f"/projects/{project.id}/phases/{phase.id}/execution"),
                         ) if user.id == phase.user_id else None,
                         style="margin-top: 1rem;"
                     )
@@ -388,6 +401,51 @@ def phase_detail(project_id: int, phase_id: int, session):
                 Pre(phase.logging or "No logs"),
                 Footer(A("Back to Project", href=f"/projects/{project_id}", cls="button"))
             ),
+            cls="container"
+        )
+
+@rt('/projects/{project_id}/phases/{phase_id}/execution')
+def phase_execution(project_id: int, phase_id: int, session):
+    user_id = session.get('user_id')
+    with Session(engine) as db_session:
+        user = db_session.get(User, user_id)
+        phase = db_session.get(Phase, phase_id)
+        project = db_session.get(Project, project_id)
+        if not user or not phase or not project or phase.project_id != project_id:
+            return RedirectResponse('/dashboard', status_code=303)
+        
+        # Card 1: Project name, Workspace, Phase status
+        header_card = Article(
+            Grid(
+                Div(Strong("Project: "), project.name),
+                Div(Strong("Workspace: "), project.path),
+                Div(Strong("Status: "), phase.status)
+            )
+        )
+        
+        # Card 2: Mission, Input deliverables
+        mission_card = Article(
+            H4("Mission"),
+            P(phase.mission),
+            H4("Input deliverables"),
+            P("TODO")
+        )
+        
+        # Form: Prompt, Execute, Log display
+        execution_form = Div(
+            Label("Prompt", Textarea(name="prompt", rows=5, placeholder="Enter your prompt here...")),
+            Button("Execute", onclick="alert('Under construction')", style="margin-top: 1rem;"),
+            H4("Logs", style="margin-top: 2rem;"),
+            Div(
+                Pre("Console log output will appear here...", cls="console-log")
+            )
+        )
+        
+        return Title(f"Execute Phase - {project.name}"), render_nav(user), Main(
+            H1("Execution"),
+            header_card,
+            mission_card,
+            execution_form,
             cls="container"
         )
 

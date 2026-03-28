@@ -13,6 +13,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - **Thành phần**:
   - Giao diện Đăng nhập (Login).
   - Giao diện Bảng điều khiển (Dashboard).
+  - Giao diện Thực thi Giai đoạn (Phase Execution).
   - Giao diện Quản lý người dùng (User Management - Dành cho Admin).
   - Xử lý điều hướng (Routing) và Middleware (Beforeware) để bảo vệ các route yêu cầu xác thực.
 
@@ -120,7 +121,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - **Quản lý Phase**:
   - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Logging, Metrics) cùng thông tin Dự án liên quan qua nút "Details". Tại đây, hệ thống cung cấp các nút thao tác dựa trên vai trò (hiện đang ở chế độ chờ phát triển - "Under construction"):
     - Nếu người dùng là PM của dự án: Có các nút **Cancel**, **Approve**, **Init**.
-    - Nếu người dùng được gán cho phase đó: Có nút **Execute**.
+    - Nếu người dùng được gán cho phase đó: Có nút **Execute** dẫn sang trang thực thi (Execution).
   - Thêm mới Phase vào dự án: Nhập Order, Mission, Chọn Role và User (tùy chọn).
   - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `pending`).
   - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `pending`.
@@ -147,6 +148,19 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - Phân biệt hiển thị qua thẻ:
     - Nếu giai đoạn do chính người dùng hiện tại phụ trách: Thẻ có viền nổi bật, có nút **Execute** (hiện tại hiển thị "Under construction") và font chữ bình thường.
     - Nếu giai đoạn do người khác phụ trách: Thẻ được làm mờ (opacity) và font chữ nhạt hơn để dễ phân biệt.
+
+
+### 3.9. Chức năng Thực thi Giai đoạn (Phase Execution)
+- Truy cập khi người dùng nhấn nút **Execute** tại trang chi tiết Phase hoặc trang "My Activity".
+- Giao diện có menu điều hướng tương tự như các trang khác, giúp người dùng dễ dàng di chuyển giữa các chức năng.
+- **Thành phần giao diện**:
+    - **Thông tin tóm tắt**: Hiển thị tên Dự án, Đường dẫn Workspace và Trạng thái hiện tại của Phase.
+    - **Nhiệm vụ (Mission)**: Hiển thị chi tiết nội dung nhiệm vụ cần thực hiện.
+    - **Input deliverables**: Hiện tại hiển thị "TODO".
+    - **Form thực thi**:
+        - Ô nhập **Prompt** (TextArea full-width).
+        - Nút **Execute** (hiện tại hiển thị "Under construction").
+        - **Log Console**: Ô hiển thị log quá trình thực thi với giao diện kiểu terminal/console.
 
 
 ## 4. Môi trường triển khai

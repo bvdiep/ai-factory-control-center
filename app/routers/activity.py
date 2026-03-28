@@ -35,10 +35,10 @@ def setup_activity_routes(rt, render_nav):
                     is_assigned_to_me = p.user_id == user_id
                     card_cls = "phase-card assigned" if is_assigned_to_me else "phase-card unassigned"
                     
-                    execute_button = Button("Execute", 
-                                          onclick="alert('Under construction')", 
+                    execute_button = A(Button("Execute", 
                                           cls="small outline",
-                                          style="margin-bottom: 0;") if is_assigned_to_me else ""
+                                          style="margin-bottom: 0;"),
+                                      href=f"/projects/{p.project_id}/phases/{p.id}/execution") if is_assigned_to_me else ""
                     
                     phase_cards.append(Div(
                         Div(
