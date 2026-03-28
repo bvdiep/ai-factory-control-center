@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fasthtml.common import *
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.models import User, Project, Role, Phase
+from app.models import User, Project, Role, Phase, Execution
 from app.core.auth import authenticate_user, auth_beforeware
 from app.routers.users import setup_user_routes
 from app.routers.projects import setup_project_routes
@@ -352,11 +352,28 @@ def phase_detail(project_id: int, phase_id: int, session):
         project = db_session.get(Project, project_id)
         if not phase: return RedirectResponse(f'/projects/{project_id}', status_code=303)
         
+        executions = db_session.exec(
+            select(Execution).where(Execution.phase_id == phase_id)
+        ).all()
+
+        total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
+        total_output = sum(e.total_output_tokens for e in executions if e.total_output_tokens)
+        total_reasoning = sum(e.total_reasoning_tokens for e in executions if e.total_reasoning_tokens)
+        total_cost = sum(e.total_cost for e in executions if e.total_cost)
+        total_cache_read = sum(e.cache_read_tokens for e in executions if e.cache_read_tokens)
+        cache_hit_list = [e.cache_hit_percent for e in executions if e.cache_hit_percent > 0]
+        avg_cache_hit = sum(cache_hit_list) / len(cache_hit_list) if cache_hit_list else 0.0
+        latency_list = [e.latency for e in executions if e.latency > 0]
+        avg_latency = sum(latency_list) / len(latency_list) if latency_list else 0.0
+
         metrics_bar = Grid(
-            Div(Small(Span("Token In: ", style="color: #666;"), Strong(phase.token_in)), style="background: #f0f4f8; padding: 0.5rem; border-radius: 8px; text-align: center;"),
-            Div(Small(Span("Token Out: ", style="color: #666;"), Strong(phase.token_out)), style="background: #fffbeb; padding: 0.5rem; border-radius: 8px; text-align: center;"),
-            Div(Small(Span("Cache Hit: ", style="color: #666;"), Strong(phase.cache_hit)), style="background: #f0fdf4; padding: 0.5rem; border-radius: 8px; text-align: center;"),
-            Div(Small(Span("Reasoning: ", style="color: #666;"), Strong(phase.reasoning)), style="background: #f5f3ff; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Token In: ", style="color: #666;"), Strong(f"{total_input:,}")), style="background: #f0f4f8; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Token Out: ", style="color: #666;"), Strong(f"{total_output:,}")), style="background: #fffbeb; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Reasoning: ", style="color: #666;"), Strong(f"{total_reasoning:,}")), style="background: #f5f3ff; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Cache Read: ", style="color: #666;"), Strong(f"{total_cache_read:,}")), style="background: #fdf2f8; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Cache Hit: ", style="color: #666;"), Strong(f"{avg_cache_hit:.2f}%")), style="background: #f0fdf4; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Avg Latency: ", style="color: #666;"), Strong(f"{avg_latency:.2f}s")), style="background: #fef3c7; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+            Div(Small(Span("Total Cost: ", style="color: #666;"), Strong(f"${total_cost:.4f}")), style="background: #fee2e2; padding: 0.5rem; border-radius: 8px; text-align: center;"),
         )
         
         project_phase_info = Article(

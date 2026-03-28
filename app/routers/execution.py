@@ -134,17 +134,35 @@ def run_agent_in_background(project_id, phase_id, execution_id, model_name, prom
             if execution:
                 execution.status = "completed"
                 metrics_json = None
-                if hasattr(llm, 'metrics'):
+                if hasattr(llm, 'metrics') and llm.metrics.accumulated_token_usage:
                     m = llm.metrics
-                    execution.total_cost = m.accumulated_cost
-                    execution.total_input_tokens = m.accumulated_token_usage.prompt_tokens
-                    execution.total_output_tokens = m.accumulated_token_usage.completion_tokens
-                    execution.total_reasoning_tokens = m.accumulated_token_usage.reasoning_tokens
+                    tu = m.accumulated_token_usage
+                    execution.total_cost = (execution.total_cost or 0) + m.accumulated_cost
+                    execution.total_input_tokens = (execution.total_input_tokens or 0) + (tu.prompt_tokens or 0)
+                    execution.total_output_tokens = (execution.total_output_tokens or 0) + (tu.completion_tokens or 0)
+                    execution.total_reasoning_tokens = (execution.total_reasoning_tokens or 0) + (tu.reasoning_tokens or 0)
+                    execution.cache_read_tokens = (execution.cache_read_tokens or 0) + (tu.cache_read_tokens or 0)
+                    execution.cache_write_tokens = (execution.cache_write_tokens or 0) + (tu.cache_write_tokens or 0)
+
+                    prompt = (execution.total_input_tokens or 0)
+                    cache_read = (execution.cache_read_tokens or 0)
+                    execution.cache_hit_percent = (cache_read / prompt * 100) if prompt > 0 else 0.0
+
+                    if m.response_latencies:
+                        execution.latency = m.response_latencies[-1].latency
+
+                    if tu.model:
+                        execution.model_name = tu.model
 
                     metrics_dict = {
-                        "prompt_tokens": m.accumulated_token_usage.prompt_tokens,
-                        "completion_tokens": m.accumulated_token_usage.completion_tokens,
-                        "reasoning_tokens": m.accumulated_token_usage.reasoning_tokens,
+                        "prompt_tokens": tu.prompt_tokens,
+                        "completion_tokens": tu.completion_tokens,
+                        "reasoning_tokens": tu.reasoning_tokens,
+                        "cache_read_tokens": tu.cache_read_tokens,
+                        "cache_write_tokens": tu.cache_write_tokens,
+                        "cache_hit_percent": execution.cache_hit_percent,
+                        "latency": execution.latency,
+                        "model_name": execution.model_name,
                         "cost": m.accumulated_cost
                     }
                     metrics_json = json.dumps(metrics_dict)
@@ -193,9 +211,32 @@ def setup_execution_routes(rt, render_nav):
             os.makedirs(session_dir, exist_ok=True)
             os.makedirs(log_dir, exist_ok=True)
 
-            execution = db_session.exec(
+            executions = db_session.exec(
                 select(Execution).where(Execution.phase_id == phase_id).order_by(Execution.id.desc())
-            ).first()
+            ).all()
+
+            total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
+            total_output = sum(e.total_output_tokens for e in executions if e.total_output_tokens)
+            total_reasoning = sum(e.total_reasoning_tokens for e in executions if e.total_reasoning_tokens)
+            total_cost = sum(e.total_cost for e in executions if e.total_cost)
+            total_cache_read = sum(e.cache_read_tokens for e in executions if e.cache_read_tokens)
+            cache_hit_list = [e.cache_hit_percent for e in executions if e.cache_hit_percent > 0]
+            avg_cache_hit = sum(cache_hit_list) / len(cache_hit_list) if cache_hit_list else 0.0
+            latency_list = [e.latency for e in executions if e.latency > 0]
+            avg_latency = sum(latency_list) / len(latency_list) if latency_list else 0.0
+
+            metrics_bar = Grid(
+                Div(Small(Span("Token In: ", style="color: #666;"), Strong(f"{total_input:,}")), style="background: #f0f4f8; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Token Out: ", style="color: #666;"), Strong(f"{total_output:,}")), style="background: #fffbeb; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Reasoning: ", style="color: #666;"), Strong(f"{total_reasoning:,}")), style="background: #f5f3ff; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Cache Read: ", style="color: #666;"), Strong(f"{total_cache_read:,}")), style="background: #fdf2f8; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Cache Hit: ", style="color: #666;"), Strong(f"{avg_cache_hit:.2f}%")), style="background: #f0fdf4; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Avg Latency: ", style="color: #666;"), Strong(f"{avg_latency:.2f}s")), style="background: #fef3c7; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                Div(Small(Span("Total Cost: ", style="color: #666;"), Strong(f"${total_cost:.4f}")), style="background: #fee2e2; padding: 0.5rem; border-radius: 8px; text-align: center;"),
+                id="metrics-bar"
+            )
+
+            execution = executions[0] if executions else None
 
             if not execution:
                 execution = Execution(phase_id=phase_id)
@@ -229,10 +270,11 @@ def setup_execution_routes(rt, render_nav):
                     name="model"
                 )),
                 Label("Prompt", Textarea(name="prompt", rows=5, placeholder="Enter your prompt here...")),
-                Button("Execute", type="submit", style="margin-top: 1rem;"),
+                Button("Execute", type="submit", id="execute-btn", style="margin-top: 1rem;"),
                 hx_post=f"/projects/{project_id}/phases/{phase_id}/execute",
                 hx_target="#log-container",
-                hx_swap="beforeend"
+                hx_swap="beforeend",
+                hx_indicator="#execute-btn"
             )
 
             log_display = Div(
@@ -240,6 +282,52 @@ def setup_execution_routes(rt, render_nav):
                 Div(
                     Pre(id="log-container", cls="console-log", style="white-space: pre-wrap;"),
                 ),
+                Script(f"""
+                    document.body.addEventListener('htmx:beforeRequest', function(evt) {{
+                        const btn = document.getElementById('execute-btn');
+                        if (btn) {{
+                            btn.disabled = true;
+                            btn.dataset.originalText = btn.innerText;
+                            btn.innerText = '⏳ Running...';
+                        }}
+                    }});
+                    function checkExecutionStatus() {{
+                        fetch('/projects/{project_id}/phases/{phase_id}/execution-status/{execution.id}')
+                            .then(r => r.json())
+                            .then(data => {{
+                                const btn = document.getElementById('execute-btn');
+                                if (btn && data.status === 'running') {{
+                                    btn.disabled = true;
+                                    if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerText;
+                                    btn.innerText = '⏳ Running...';
+                                }} else if (btn && (data.status === 'completed' || data.status === 'failed')) {{
+                                    btn.disabled = false;
+                                    btn.innerText = btn.dataset.originalText || 'Execute';
+                                }}
+                                if (data.metrics) {{
+                                    const metricsBar = document.getElementById('metrics-bar');
+                                    if (metricsBar) {{
+                                        const m = data.metrics;
+                                        const fmt = (n) => typeof n === 'number' ? n.toLocaleString() : '0';
+                                        const fmtCost = (n) => typeof n === 'number' ? '$' + n.toFixed(4) : '$0.0000';
+                                        const fmtPct = (n) => typeof n === 'number' ? n.toFixed(2) + '%' : '0.00%';
+                                        const fmtLat = (n) => typeof n === 'number' ? n.toFixed(2) + 's' : '0.00s';
+                                        metricsBar.innerHTML = `
+                                            <div style="background: #f0f4f8; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Token In: </span><strong>${{fmt(m.total_input)}}</strong></small></div>
+                                            <div style="background: #fffbeb; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Token Out: </span><strong>${{fmt(m.total_output)}}</strong></small></div>
+                                            <div style="background: #f5f3ff; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Reasoning: </span><strong>${{fmt(m.total_reasoning)}}</strong></small></div>
+                                            <div style="background: #fdf2f8; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Cache Read: </span><strong>${{fmt(m.total_cache_read)}}</strong></small></div>
+                                            <div style="background: #f0fdf4; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Cache Hit: </span><strong>${{fmtPct(m.avg_cache_hit)}}</strong></small></div>
+                                            <div style="background: #fef3c7; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Avg Latency: </span><strong>${{fmtLat(m.avg_latency)}}</strong></small></div>
+                                            <div style="background: #fee2e2; padding: 0.5rem; border-radius: 8px; text-align: center;"><small><span style="color: #666;">Total Cost: </span><strong>${{fmtCost(m.total_cost)}}</strong></small></div>
+                                        `;
+                                    }}
+                                }}
+                            }});
+                    }}
+                    checkExecutionStatus();
+                    setInterval(checkExecutionStatus, 2000);
+                """),
                 Script(f"""
                     (function() {{
                         const term = document.getElementById('log-container');
@@ -258,6 +346,7 @@ def setup_execution_routes(rt, render_nav):
 
             return Title(f"Execute Phase - {project.name}"), render_nav(user), Main(
                 H1("Execution"),
+                metrics_bar,
                 header_card,
                 mission_card,
                 execution_form,
@@ -316,9 +405,7 @@ def setup_execution_routes(rt, render_nav):
                     f.write(f"[{datetime.utcnow().isoformat()}] Log started\n")
 
             with open(log_file, 'r', encoding="utf-8") as f:
-                for line in f:
-                    yield f"data: <span>{html.escape(line)}</span>\n\n"
-
+                f.seek(0, 2)
                 while True:
                     line = f.readline()
                     if not line:
@@ -328,3 +415,36 @@ def setup_execution_routes(rt, render_nav):
 
         from starlette.responses import StreamingResponse
         return StreamingResponse(log_generator(), media_type="text/event-stream", headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
+
+    @rt('/projects/{project_id}/phases/{phase_id}/execution-status/{execution_id}')
+    async def get_execution_status(project_id: int, phase_id: int, execution_id: int, session):
+        with Session(engine) as db_session:
+            executions = db_session.exec(
+                select(Execution).where(Execution.phase_id == phase_id).order_by(Execution.id.desc())
+            ).all()
+            
+            total_input = sum(e.total_input_tokens for e in executions if e.total_input_tokens)
+            total_output = sum(e.total_output_tokens for e in executions if e.total_output_tokens)
+            total_reasoning = sum(e.total_reasoning_tokens for e in executions if e.total_reasoning_tokens)
+            total_cost = sum(e.total_cost for e in executions if e.total_cost)
+            total_cache_read = sum(e.cache_read_tokens for e in executions if e.cache_read_tokens)
+            cache_hit_list = [e.cache_hit_percent for e in executions if e.cache_hit_percent > 0]
+            avg_cache_hit = sum(cache_hit_list) / len(cache_hit_list) if cache_hit_list else 0.0
+            latency_list = [e.latency for e in executions if e.latency > 0]
+            avg_latency = sum(latency_list) / len(latency_list) if latency_list else 0.0
+            
+            execution = executions[0] if executions else None
+            status = execution.status if execution else "unknown"
+            
+            return {
+                "status": status,
+                "metrics": {
+                    "total_input": total_input,
+                    "total_output": total_output,
+                    "total_reasoning": total_reasoning,
+                    "total_cache_read": total_cache_read,
+                    "avg_cache_hit": avg_cache_hit,
+                    "avg_latency": avg_latency,
+                    "total_cost": total_cost
+                }
+            }
