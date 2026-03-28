@@ -29,10 +29,10 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - **Vị trí**: `app/models/__init__.py`
 - **Mô tả**: Định nghĩa cấu trúc cơ sở dữ liệu sử dụng SQLModel (kết hợp giữa Pydantic và SQLAlchemy).
 - **Các thực thể (Entities)**:
-  - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status).
+  - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status, created_at, updated_at).
   - **Role**: Định nghĩa vai trò của người dùng (name, system_prompt).
-  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM).
-  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
+  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, created_at, updated_at, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM).
+  - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
 
 ### 2.4. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
@@ -54,6 +54,18 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Lọc theo trạng thái `status`.
   - Thêm mới người dùng (yêu cầu `username` duy nhất).
   - Chỉnh sửa thông tin người dùng.
+
+
+### 2.7. Khối Quản lý Dự án (Project Management)
+- **Vị trí**: `app/routers/projects.py`
+- **Mô tả**: Cung cấp các chức năng quản lý danh sách dự án dành cho Admin.
+- **Thành phần**:
+  - Danh sách dự án với phân trang.
+  - Tìm kiếm theo `name` hoặc `description`.
+  - Lọc theo trạng thái `status`.
+  - Thêm mới dự án qua modal popup.
+  - Chỉnh sửa dự án qua modal popup.
+  - Xóa dự án.
 
 
 ## 3. Các chức năng của hệ thống
@@ -105,6 +117,17 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Ràng buộc khi thêm Phase: Không cho phép thêm Phase có `order` nhỏ hơn một Phase đã bắt đầu (status khác `pending`).
   - Chỉnh sửa Phase: Chỉ cho phép chỉnh sửa các Phase đang ở trạng thái `pending`.
   - Cảnh báo: Hệ thống hiển thị cảnh báo (non-blocking) qua thông báo alert nếu người dùng được gán cho Phase có vai trò (Role) không khớp với vai trò yêu cầu của Phase đó.
+
+### 3.7. Chức năng Quản lý Dự án (Project Management - Admin Only)
+- Chỉ hiển thị menu "Projects" cho người dùng có vai trò `Admin`.
+- Truy cập tại route `/projects`.
+- Cho phép tìm kiếm dự án theo `name` hoặc `description`.
+- Cho phép lọc danh sách dự án theo trạng thái.
+- Hỗ trợ phân trang danh sách dự án.
+- Thêm mới dự án qua modal popup (không chuyển hướng trang).
+- Chỉnh sửa dự án qua modal popup.
+- Xóa dự án (có xác nhận).
+- Tự động cập nhật trường `updated_at` mỗi khi chỉnh sửa dự án.
 
 
 ## 4. Môi trường triển khai

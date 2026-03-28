@@ -16,6 +16,8 @@ class User(SQLModel, table=True):
     hashed_password: str
     role_id: Optional[int] = Field(default=None, foreign_key="role.id")
     status: str = Field(default="active")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     role: Optional[Role] = Relationship(back_populates="users")
     projects: List["Project"] = Relationship(back_populates="user")
@@ -27,6 +29,7 @@ class Project(SQLModel, table=True):
     path: str
     config_override: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="active")
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
@@ -47,6 +50,8 @@ class Phase(SQLModel, table=True):
     cache_hit: int = Field(default=0)
     reasoning: int = Field(default=0)
     order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     project: Project = Relationship(back_populates="phases")
     role: Role = Relationship()

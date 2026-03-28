@@ -2,6 +2,8 @@ import sys
 import os
 import json
 
+from datetime import datetime
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fasthtml.common import *
@@ -10,6 +12,7 @@ from app.core.database import engine
 from app.models import User, Project, Role, Phase
 from app.core.auth import authenticate_user, auth_beforeware
 from app.routers.users import setup_user_routes
+from app.routers.projects import setup_project_routes
 
 css = Style('''
     .login-page {
@@ -42,6 +45,7 @@ app, rt = fast_app(
 def render_nav(user=None):
     nav_items = [Li(A("Home", href="/dashboard", cls="secondary"))]
     if user and user.role and user.role.name == 'Admin':
+        nav_items.append(Li(A("Projects", href="/projects", cls="secondary")))
         nav_items.append(Li(A("Users", href="/users", cls="secondary")))
     nav_items.append(Li(A("Logout", href="/logout", cls="secondary")))
     
@@ -52,6 +56,7 @@ def render_nav(user=None):
     )
 
 setup_user_routes(rt, render_nav)
+setup_project_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
@@ -370,6 +375,7 @@ def edit_phase_post(project_id: int, phase_id: int, order: int, mission: str, ro
         phase.role_id = role_id
         phase.user_id = int(user_id) if user_id else None
         phase.skill = skill
+        phase.updated_at = datetime.utcnow()
         
         db_session.add(phase)
         db_session.commit()

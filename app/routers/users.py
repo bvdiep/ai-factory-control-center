@@ -4,6 +4,8 @@ from app.core.database import engine
 from app.models import User, Role
 from app.core.auth import get_password_hash
 import bcrypt
+from datetime import datetime
+
 
 def get_user_by_id(db_session, user_id):
     return db_session.exec(select(User).where(User.id == user_id)).first()
@@ -77,19 +79,21 @@ def setup_user_routes(rt, render_nav):
                     Td(u.role.name if u.role else ""),
                     Td(u.status),
                     Td(
-                        A("Edit", href=f"/users/edit/{u.id}"),
-                        cls="grid"
+                        A("Edit", href=f"/users/edit/{u.id}")
                     )
                 ) for u in users
             ]
 
             return Title("User Management"), render_nav(current_user), Main(
-                H1("User Management"),
-                A("Add New User", href="/users/add", role="button", cls="primary"),
+                Div(
+                    H1("User Management", style="margin-bottom: 0;"),
+                    A("Add New User", href="/users/add"),
+                    style="display: flex; justify-content: space-between; align-items: center;"
+                ),
                 Hr(),
                 filter_form,
                 Table(
-                    Thead(Tr(Th("ID"), Th("Username"), Th("Name"), Th("Role"), Th("Status"), Th("Actions"))),
+                    Thead(Tr(Th("ID"), Th("Username"), Th("Name"), Th("Role"), Th("Status"), Th("Actions", style="width: 120px;"))),
                     Tbody(*user_rows)
                 ),
                 pagination,
@@ -183,6 +187,7 @@ def setup_user_routes(rt, render_nav):
                 user.hashed_password = get_password_hash(password)
             user.role_id = role_id
             user.status = status
+            user.updated_at = datetime.utcnow()
             
             db_session.add(user)
             db_session.commit()
