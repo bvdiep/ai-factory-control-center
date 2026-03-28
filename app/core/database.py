@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
+from app.core.config import settings
 
-sqlite_file_name = "system.db"
+sqlite_file_name = settings.DB_PATH
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 engine = create_engine(sqlite_url, echo=True)

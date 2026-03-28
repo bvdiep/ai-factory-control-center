@@ -5,13 +5,13 @@ module.exports = {
       script: "app/main.py",
       interpreter: "./.venv/bin/python",
       env: {
-        PORT: 5002,
+        PORT: 5001,
         NODE_ENV: "production"
       },
       watch: false,
       log_date_format: "YYYY-MM-DD HH:mm:ss",
-      error_file: "logs/err.log",
-      out_file: "logs/out.log",
+      error_file: "/home/dd/work/diep/ai-factory-control-center-data/logs/err.log",
+      out_file: "/home/dd/work/diep/ai-factory-control-center-data/logs/out.log",
       merge_logs: true,
       autorestart: true
     }
