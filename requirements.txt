@@ -4,3 +4,6 @@ uvicorn
 python-fasthtml==0.12.50
 sse-starlette==3.3.3
 starlette==0.52.1
+openhands-sdk
+litellm
+python-dotenv

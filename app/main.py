@@ -14,6 +14,7 @@ from app.core.auth import authenticate_user, auth_beforeware
 from app.routers.users import setup_user_routes
 from app.routers.projects import setup_project_routes
 from app.routers.activity import setup_activity_routes
+from app.routers.execution import setup_execution_routes
 
 css = Style('''
     .login-page {
@@ -125,7 +126,7 @@ css = Style('''
 ''')
 
 app, rt = fast_app(
-    hdrs=(css,),
+    hdrs=(css, Script(src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js")),
     before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico']),
     secret_key="super-secret-key"
 )
@@ -148,6 +149,7 @@ def render_nav(user=None):
 setup_user_routes(rt, render_nav)
 setup_project_routes(rt, render_nav)
 setup_activity_routes(rt, render_nav)
+setup_execution_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
@@ -404,50 +406,6 @@ def phase_detail(project_id: int, phase_id: int, session):
             cls="container"
         )
 
-@rt('/projects/{project_id}/phases/{phase_id}/execution')
-def phase_execution(project_id: int, phase_id: int, session):
-    user_id = session.get('user_id')
-    with Session(engine) as db_session:
-        user = db_session.get(User, user_id)
-        phase = db_session.get(Phase, phase_id)
-        project = db_session.get(Project, project_id)
-        if not user or not phase or not project or phase.project_id != project_id:
-            return RedirectResponse('/dashboard', status_code=303)
-        
-        # Card 1: Project name, Workspace, Phase status
-        header_card = Article(
-            Grid(
-                Div(Strong("Project: "), project.name),
-                Div(Strong("Workspace: "), project.path),
-                Div(Strong("Status: "), phase.status)
-            )
-        )
-        
-        # Card 2: Mission, Input deliverables
-        mission_card = Article(
-            H4("Mission"),
-            P(phase.mission),
-            H4("Input deliverables"),
-            P("TODO")
-        )
-        
-        # Form: Prompt, Execute, Log display
-        execution_form = Div(
-            Label("Prompt", Textarea(name="prompt", rows=5, placeholder="Enter your prompt here...")),
-            Button("Execute", onclick="alert('Under construction')", style="margin-top: 1rem;"),
-            H4("Logs", style="margin-top: 2rem;"),
-            Div(
-                Pre("Console log output will appear here...", cls="console-log")
-            )
-        )
-        
-        return Title(f"Execute Phase - {project.name}"), render_nav(user), Main(
-            H1("Execution"),
-            header_card,
-            mission_card,
-            execution_form,
-            cls="container"
-        )
 
 @rt('/projects/{project_id}/phases/{phase_id}/edit', methods=['GET'])
 def edit_phase_get(project_id: int, phase_id: int, session):
@@ -522,4 +480,5 @@ def index():
     return RedirectResponse('/dashboard', status_code=303)
 
 if __name__ == '__main__':
-    serve()
+    is_prod = os.environ.get('NODE_ENV') == 'production'
+    serve(reload=not is_prod, reload_excludes=['storage/*', 'storage/**/*', '*.log', '*.db', '*.db-journal', 'logs/*', 'logs/**/*'])

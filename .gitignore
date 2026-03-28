@@ -154,3 +154,5 @@ cython_debug/
 # Project specific
 system.db
 *.db
+storage/*
+

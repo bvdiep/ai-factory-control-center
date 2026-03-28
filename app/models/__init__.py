@@ -56,3 +56,26 @@ class Phase(SQLModel, table=True):
     project: Project = Relationship(back_populates="phases")
     role: Role = Relationship()
     user: Optional[User] = Relationship()
+    executions: List["Execution"] = Relationship(back_populates="phase", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+class Execution(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    phase_id: int = Field(foreign_key="phase.id", nullable=False)
+    status: str = Field(default="pending")
+    start_date: datetime = Field(default_factory=datetime.utcnow)
+    total_input_tokens: int = Field(default=0)
+    total_output_tokens: int = Field(default=0)
+    total_reasoning_tokens: int = Field(default=0)
+    total_cost: float = Field(default=0.0)
+
+    phase: Phase = Relationship()
+    messages: List["ExecutionMessage"] = Relationship(back_populates="execution", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+class ExecutionMessage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    execution_id: int = Field(foreign_key="execution.id", nullable=False)
+    role: str = Field(nullable=False)
+    content: str = Field(nullable=False)
+    metrics: Optional[str] = Field(default=None) # JSON string
+
+    execution: Execution = Relationship(back_populates="messages")
