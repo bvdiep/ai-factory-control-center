@@ -182,10 +182,14 @@ def setup_execution_routes(rt, render_nav):
             )
 
             mission_card = Article(
-                H4("Mission"),
-                P(phase.mission),
-                H4("System Prompt"),
-                Pre(phase.role.system_prompt if phase.role and phase.role.system_prompt else "No system prompt defined")
+                Details(
+                    Summary(Strong("Mission")),
+                    P(phase.mission, style="margin-top: 1rem;")
+                ),
+                Details(
+                    Summary(Strong("System Prompt")),
+                    Pre(phase.role.system_prompt if phase.role and phase.role.system_prompt else "No system prompt defined", style="margin-top: 1rem;")
+                )
             )
 
             execution_form = Form(
