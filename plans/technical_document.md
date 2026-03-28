@@ -112,10 +112,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Truy cập tại route `/dashboard` (yêu cầu đã đăng nhập).
 - Hiển thị lời chào mừng với tên người dùng.
 - Hiển thị Vai trò (Role) hiện tại của người dùng.
-- Liệt kê danh sách các Dự án (Projects) mà người dùng là Project Manager (PM), bao gồm:
-  - Tên dự án.
-  - Mô tả dự án.
-  - Đường dẫn (Path) của dự án.
+- **Phần Project**: Liệt kê danh sách các Dự án (Projects) mà người dùng là Project Manager (PM) dưới dạng các thẻ (cards) có độ cao cố định, mỗi hàng 4 thẻ. Nội dung dài sẽ được cắt bớt. Thẻ có màu nền xanh dương nhạt.
+- **Phần Activity**: Liệt kê danh sách các Giai đoạn (Phases) mà người dùng được gán vào, sắp xếp theo thời gian cập nhật mới nhất. Hiển thị dưới dạng các thẻ (cards) có độ cao cố định tương tự phần Project, mỗi hàng 4 thẻ. Thẻ có màu nền xanh lá nhạt. Mỗi thẻ hiển thị rõ trạng thái (Status) của Phase. Khi click vào thẻ, người dùng sẽ được chuyển hướng trực tiếp đến màn hình Thực thi (Execution) của Phase đó thay vì màn hình chi tiết Project.
 
 ### 3.3. Chức năng Đăng xuất (Logout)
 - Truy cập tại route `/logout`.

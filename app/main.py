@@ -38,6 +38,67 @@ css = Style('''
     .login-container h1 {
         text-align: center;
     }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .dashboard-card {
+        padding: 1.25rem;
+        border-radius: var(--pico-border-radius);
+        border: 1px solid var(--pico-muted-border-color);
+        display: flex;
+        flex-direction: column;
+        height: 200px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+    }
+    .dashboard-card-title {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dashboard-card-desc {
+        flex-grow: 1;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        font-size: 0.9rem;
+        color: var(--pico-muted-color);
+    }
+    .dashboard-card-footer {
+        margin-top: auto;
+        font-size: 0.8rem;
+        color: var(--pico-muted-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .project-card {
+        background-color: rgba(41, 128, 185, 0.05);
+        border-color: rgba(41, 128, 185, 0.2);
+    }
+    .activity-card {
+        background-color: rgba(39, 174, 96, 0.05);
+        border-color: rgba(39, 174, 96, 0.2);
+    }
+    @media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
     .phase-grid {
         display: flex;
         flex-direction: column;
@@ -207,22 +268,58 @@ def dashboard(session):
         role = db_session.exec(select(Role).where(Role.id == user.role_id)).first()
         
         projects = user.projects
-        
-        project_list = Ul(
-            *[Li(
-                Strong(A(p.name, href=f"/projects/{p.id}")), " - ", p.description, Br(),
-                Small(f"Path: {p.path}")
-            ) for p in projects]
-        )
-        
+
+        project_cards = Div(
+            *[A(
+                Div(
+                    Div(p.name, cls="dashboard-card-title"),
+                    Div(p.description or "No description", cls="dashboard-card-desc"),
+                    Div(f"Path: {p.path}", cls="dashboard-card-footer"),
+                    cls="dashboard-card project-card"
+                ),
+                href=f"/projects/{p.id}",
+                style="text-decoration: none; color: inherit;"
+            ) for p in projects],
+            cls="dashboard-grid"
+        ) if projects else P("No projects assigned.")
+
+        assigned_phases = db_session.exec(
+            select(Phase).where(Phase.user_id == user.id).order_by(Phase.updated_at.desc())
+        ).all()
+
+        activity_cards = Div(
+            *[A(
+                Div(
+                    Div(
+                        Span(f"Phase {ph.order}: {ph.project.name}", cls="dashboard-card-title"),
+                        Span(ph.status.upper(), cls=f"phase-status status-{ph.status.lower()}", style="float: right; font-size: 0.7rem; font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; background-color: var(--pico-primary-background); color: var(--pico-primary-inverse);"),
+                    ),
+                    Div(ph.mission or "No mission", cls="dashboard-card-desc", style="margin-top: 0.5rem;"),
+                    Div(f"Updated: {ph.updated_at.strftime('%Y-%m-%d %H:%M')}", cls="dashboard-card-footer"),
+                    cls="dashboard-card activity-card"
+                ),
+                href=f"/projects/{ph.project_id}/phases/{ph.id}/execution",
+                style="text-decoration: none; color: inherit;"
+            ) for ph in assigned_phases],
+            cls="dashboard-grid"
+        ) if assigned_phases else P("No recent activity.")
+
         return Title("Dashboard"), render_nav(user), Main(
             H1("Dashboard"),
             Div(
                 H2(f"{user.name}"),
                 P(f"Your Role: {role.name if role else 'None'}"),
+                P("- Admin: tạo ra các project, gán project cho PM."),
+                P("- PM: Phân chia project thành các phases. Không cần phải có tất cả các phase ngay từ đầu. Phase mới sinh ra sẽ ở trạng thái Pending, không member nào được can thiệp."),
+                P("- PM kích hoạt một phase để member có thể làm bằng cách chuyển status của nó sang Start."),
+                P("- Khi được kích hoạt thì member mới được thao tác: member làm việc với Agent AI để hoàn thành công việc của mình."),
+                P("- PM sẽ review để Approve (chuyển status thành Done)"),
                 Hr(),
                 H3("Your Projects"),
-                project_list if projects else P("No projects assigned.")
+                project_cards,
+                Hr(),
+                H3("Activity"),
+                activity_cards
             ),
             cls="container"
         )
@@ -402,7 +499,7 @@ def phase_detail(project_id: int, phase_id: int, session):
                         Group(
                             Button("Cancel", onclick="alert('Under construction')", cls="outline"),
                             Button("Approve", onclick="alert('Under construction')", cls="outline"),
-                            Button("Init", onclick="alert('Under construction')", cls="outline"),
+                            Button("Start", onclick="alert('Under construction')", cls="outline"),
                         ) if user.id == project.user_id else None,
                         # Phase user button
                         Group(
