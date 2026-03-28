@@ -60,7 +60,11 @@ def setup_activity_routes(rt, render_nav):
                     ))
                 
                 project_sections.append(Section(
-                    H3(project.name, style="margin-bottom: 1rem; border-left: 4px solid var(--pico-secondary); padding-left: 0.5rem;"),
+                    Div(
+                        H3(project.name, style="margin-bottom: 0; border-left: 4px solid var(--pico-secondary); padding-left: 0.5rem;"),
+                        A("File Explorer", href=f"/projects/{project.id}/files", cls="outline", style="margin-bottom: 0;"),
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"
+                    ),
                     Div(*phase_cards, cls="phase-grid"),
                     style="margin-bottom: 3rem;"
                 ))

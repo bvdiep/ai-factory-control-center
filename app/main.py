@@ -16,6 +16,7 @@ from app.routers.projects import setup_project_routes
 from app.routers.activity import setup_activity_routes
 from app.routers.execution import setup_execution_routes
 from app.routers.roles import setup_role_routes
+from app.routers.files import setup_file_routes
 
 css = Style('''
     .login-page {
@@ -155,6 +156,7 @@ setup_project_routes(rt, render_nav)
 setup_activity_routes(rt, render_nav)
 setup_execution_routes(rt, render_nav)
 setup_role_routes(rt, render_nav)
+setup_file_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
@@ -216,7 +218,7 @@ def dashboard(session):
         return Title("Dashboard"), render_nav(user), Main(
             H1("Dashboard"),
             Div(
-                H2(f"Welcome, {user.username}!"),
+                H2(f"{user.name}"),
                 P(f"Your Role: {role.name if role else 'None'}"),
                 Hr(),
                 H3("Your Projects"),

@@ -4,6 +4,12 @@ Hệ thống quản lý điều khiển cho AI Factory, xây dựng bằng FastH
 
 ## Cài đặt
 
+### Yêu cầu hệ thống
+- Python 3.x
+- `rsync` và `zip` (để hỗ trợ tính năng nén và tải thư mục trong File Explorer).
+  - Ubuntu/Debian: `sudo apt-get install rsync zip`
+  - MacOS: `brew install rsync zip`
+
 1. Tạo môi trường ảo (virtual environment):
 ```bash
 python3 -m venv .venv

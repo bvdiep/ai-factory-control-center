@@ -275,7 +275,11 @@ def setup_execution_routes(rt, render_nav):
             ''')
 
             return Title(f"Execute Phase - {project.name}"), extra_css, render_nav(user), Main(
-                H1("Execution"),
+                Div(
+                    H1("Execution", style="margin-bottom: 0;"),
+                    A("File Explorer", href=f"/projects/{project.id}/files", cls="outline", style="margin-bottom: 0;"),
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;"
+                ),
                 metrics_bar,
                 header_card,
                 mission_card,

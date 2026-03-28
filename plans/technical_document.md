@@ -201,6 +201,18 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Chỉnh sửa Role qua modal popup: Cho phép thay đổi tên và Skill.
 - Xóa Role: Chỉ cho phép xóa nếu Role đó không được gán cho bất kỳ người dùng nào. Nếu có người dùng đang mang Role này, hệ thống sẽ từ chối xóa.
 
+
+### 3.11. Chức năng File Explorer
+- Truy cập thông qua liên kết "File Explorer" ở góc phải tiêu đề dự án tại trang "My Activity" hoặc trang "Execution".
+- Cho phép người dùng duyệt qua các thư mục và file trong thư mục gốc của dự án (`{settings.PROJECT_ROOT}/{project.path}`).
+- Hiển thị danh sách thư mục và file, trong đó thư mục được xếp lên trên, sau đó đến file, tất cả được sắp xếp theo thứ tự bảng chữ cái.
+- Hỗ trợ điều hướng vào các thư mục con thông qua breadcrumbs.
+- Cho phép xem nội dung các file text trực tiếp trên trình duyệt (chỉ xem, không chỉnh sửa).
+- Tích hợp cơ chế bảo mật để ngăn chặn directory traversal (chỉ cho phép truy cập trong phạm vi thư mục dự án).
+- **Tính năng Upload**: Cho phép tải file lên thư mục hiện tại. Chỉ hỗ trợ các định dạng: docx, pdf, txt, md, csv, jpg, png, jpeg, gif.
+- **Tính năng Download**: Cho phép tải file hoặc toàn bộ thư mục (dưới dạng file zip) về máy. Nếu tải từ thư mục gốc của dự án, hệ thống sẽ tự động loại bỏ các file/thư mục được khai báo trong `.gitignore` (sử dụng lệnh `rsync`).
+- **Tính năng Delete**: Cho phép xóa file hoặc thư mục (có hộp thoại xác nhận trước khi xóa).
+- **Tính năng Create Folder**: Cho phép tạo thư mục mới trong thư mục hiện tại.
 ## 4. Môi trường triển khai
 - **Ngôn ngữ**: Python 3
 - **Cơ sở dữ liệu**: SQLite

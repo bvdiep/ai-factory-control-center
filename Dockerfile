@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libffi-dev \
     docker.io \
+    rsync \
+    zip \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Cài đặt Docker Compose V2 (Bản plugin chính thức)
