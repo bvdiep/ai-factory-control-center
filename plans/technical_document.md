@@ -140,7 +140,13 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
   - Hiển thị thông tin cơ bản của dự án (Tên, Mô tả, Path, Trạng thái).
   - Liệt kê danh sách các giai đoạn (Phases) của dự án, sắp xếp theo thứ tự (`order`).
 - **Quản lý Phase**:
-  - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Logging, Metrics) cùng thông tin Dự án liên quan qua nút "Details". Tại đây, hệ thống cung cấp các nút thao tác dựa trên vai trò (hiện đang ở chế độ chờ phát triển - "Under construction"):
+  - Xem chi tiết toàn bộ các trường của Phase (Mission, Skill, Status, Conversation, Metrics) cùng thông tin Dự án liên quan qua nút "Details". Tại đây, hệ thống cung cấp các nút thao tác dựa trên vai trò:
+    - **Start**: Chuyển trạng thái giữa `Pending` và `Start`. Chỉ kích hoạt khi Phase ở trạng thái `Pending` hoặc `Start`.
+    - **Approve**: Chuyển trạng thái giữa `Processed` và `Done`. Chỉ kích hoạt khi Phase ở trạng thái `Processed` hoặc `Done`.
+    - **Cancel**: Chuyển trạng thái thành `Cancel` bất cứ lúc nào (có cảnh báo xác nhận). Khi đã `Cancel`, nút sẽ bị vô hiệu hóa.
+  - **Skill**: Lấy từ `role.skill` tương ứng với role của phase.
+  - **Conversation**: Thay thế phần "Logging" cũ, hiển thị link "View Conversation". Khi nhấn vào sẽ mở modal popup danh sách tin nhắn giữa user và agent (tương tự màn hình Execution).
+  - **Status Color**: Trạng thái Phase được tô màu tương ứng (Pending: xám, Start: vàng, Processing: xanh dương, Processed: xanh lá, Done: xanh ngọc, Cancel: đỏ).
     - Nếu người dùng là PM của dự án: Có các nút **Cancel**, **Approve**, **Init**.
     - Nếu người dùng được gán cho phase đó: Có nút **Execute** dẫn sang trang thực thi (Execution).
   - Thêm mới Phase vào dự án: Nhập Order, Mission, Chọn Role và User (tùy chọn).

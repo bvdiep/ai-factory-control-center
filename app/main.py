@@ -493,13 +493,22 @@ def phase_detail(project_id: int, phase_id: int, session):
                     H4("Phase Info"),
                     P(Strong("Role: "), phase.role.name if phase.role else "N/A"),
                     P(Strong("User: "), phase.user.username if phase.user else "Unassigned"),
-                    P(Strong("Status: "), phase.status),
+                    P(Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'Processed' else '#10b981' if phase.status == 'Done' else '#3b82f6' if phase.status == 'Processing' else '#eab308' if phase.status == 'Start' else '#ef4444' if phase.status == 'Cancel' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;")),
                     Div(
                         # PM buttons
                         Group(
-                            Button("Cancel", onclick="alert('Under construction')", cls="outline"),
-                            Button("Approve", onclick="alert('Under construction')", cls="outline"),
-                            Button("Start", onclick="alert('Under construction')", cls="outline"),
+                            Button("Cancel", 
+                                   onclick=f"if(confirm('Are you sure you want to cancel this phase?')) {{ fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: 'Cancel'}})}}).then(r => {{ if(r.ok) location.reload(); }}); }} return false;", 
+                                   cls="outline", 
+                                   disabled=phase.status == 'Cancel'),
+                            Button("Approve" if phase.status != 'Done' else "Unapprove", 
+                                   onclick=f"fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: '" + ('Done' if phase.status == 'Processed' else 'Processed') + "'}}).then(r => {{ if(r.ok) location.reload(); }}); return false;", 
+                                   cls="outline", 
+                                   disabled=phase.status not in ['Processed', 'Done']),
+                            Button("Pending" if phase.status == 'Start' else "Start", 
+                                   onclick=f"fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: '" + ('Start' if phase.status == 'Pending' else 'Pending') + "'}}).then(r => {{ if(r.ok) location.reload(); }}); return false;", 
+                                   cls="outline", 
+                                   disabled=phase.status not in ['Pending', 'Start']),
                         ) if user.id == project.user_id else None,
                         # Phase user button
                         Group(
@@ -519,14 +528,57 @@ def phase_detail(project_id: int, phase_id: int, session):
                 H2("Mission"),
                 P(phase.mission),
                 H2("Skill"),
-                P(phase.skill or "No skills defined"),
-                H2("Logging"),
-                Pre(phase.logging or "No logs"),
+                P(phase.role.skill if phase.role and phase.role.skill else "No skills defined"),
+                H2("Conversation"),
+                A("View Conversation", href="#",
+                  hx_get=f"/projects/{project_id}/phases/{phase_id}/conversation/{executions[0].id}" if executions else "#",
+                  hx_target="#conversation-content-container",
+                  hx_swap="innerHTML",
+                  onclick="document.getElementById('conversation-modal').showModal(); return false;" if executions else "alert('No executions yet'); return false;"),
                 Footer(A("Back to Project", href=f"/projects/{project_id}", cls="button"))
             ),
             cls="container"
-        )
+        ), Dialog(
+                Article(
+                    Header(H3("Conversation")),
+                    Div(
+                        P("Click Conversation button to load messages.", style="color: #666; font-style: italic;"),
+                        id="conversation-content-container",
+                        style="max-height: 500px; overflow-y: auto;"
+                    ),
+                    Footer(
+                        Button("Close", onclick="document.getElementById('conversation-modal').close()", type="button")
+                    )
+                ),
+                id="conversation-modal",
+                style="max-width: 90vw; width: 90vw; max-height: 80vh;",
+                onopen="setTimeout(() => { const c = document.getElementById('conversation-content-container'); if(c) c.scrollTop = c.scrollHeight; }, 50)"
+            ),
 
+
+@rt('/projects/{project_id}/phases/{phase_id}/status', methods=['POST'])
+async def update_phase_status(project_id: int, phase_id: int, session, req):
+    user_id = session.get('user_id')
+    if not user_id:
+        return Response(status_code=401)
+
+    data = await req.json()
+    new_status = data.get('status')
+
+    with Session(engine) as db_session:
+        project = db_session.get(Project, project_id)
+        if not project or project.user_id != user_id:
+            return Response(status_code=403)
+
+        phase = db_session.get(Phase, phase_id)
+        if not phase or phase.project_id != project_id:
+            return Response(status_code=404)
+
+        phase.status = new_status
+        db_session.add(phase)
+        db_session.commit()
+
+        return Response(status_code=200)
 
 @rt('/projects/{project_id}/phases/{phase_id}/edit', methods=['GET'])
 def edit_phase_get(project_id: int, phase_id: int, session):
