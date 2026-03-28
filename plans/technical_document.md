@@ -5,11 +5,11 @@ AI Factory Control Center là một hệ thống quản lý điều khiển đư
 
 ## 2. Kiến trúc và Các khối chức năng (Functional Blocks)
 
-Hệ thống được chia thành các khối chức năng chính sau:
+Hệ thống được chia thành các khối chức năng chính sau, áp dụng kiến trúc phân lớp (Layered Architecture) để tăng tính module hóa và dễ bảo trì:
 
 ### 2.1. Khối Giao diện Web (Web Interface - FastHTML)
-- **Vị trí**: `app/main.py`
-- **Mô tả**: Đóng vai trò là Entry point của ứng dụng. Sử dụng FastHTML để render giao diện người dùng (UI) trực tiếp từ mã Python mà không cần framework frontend riêng biệt.
+- **Vị trí**: `app/main.py`, `app/routers/`
+- **Mô tả**: Đóng vai trò là Entry point của ứng dụng và xử lý routing. Sử dụng FastHTML để render giao diện người dùng (UI) trực tiếp từ mã Python.
 - **Thành phần**:
   - Giao diện Đăng nhập (Login).
   - Giao diện Bảng điều khiển (Dashboard).
@@ -17,7 +17,19 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Giao diện Quản lý người dùng (User Management - Dành cho Admin).
   - Xử lý điều hướng (Routing) và Middleware (Beforeware) để bảo vệ các route yêu cầu xác thực.
 
-### 2.2. Khối Xác thực và Phân quyền (Authentication & Authorization)
+### 2.2. Khối Dịch vụ (Services)
+- **Vị trí**: `app/services/`
+- **Mô tả**: Chứa các logic nghiệp vụ cốt lõi của ứng dụng, tách biệt khỏi tầng giao diện và routing.
+- **Thành phần**:
+  - `openhands_service.py`: Quản lý việc tương tác với OpenHands SDK, khởi tạo Agent, LLM, Workspace và chạy các tiến trình ngầm để thực thi nhiệm vụ AI.
+
+### 2.3. Khối Cấu hình (Configuration)
+- **Vị trí**: `app/core/config.py`
+- **Mô tả**: Quản lý tập trung các biến môi trường và cấu hình của hệ thống.
+- **Thành phần**:
+  - Lớp `Settings` load các biến từ file `.env` (như `OPENHANDS_STORAGE_PATH`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `SECRET_KEY`).
+
+### 2.4. Khối Xác thực và Phân quyền (Authentication & Authorization)
 - **Vị trí**: `app/core/auth.py`
 - **Mô tả**: Xử lý các nghiệp vụ liên quan đến bảo mật người dùng.
 - **Thành phần**:
@@ -26,7 +38,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Quản lý phiên đăng nhập (Session management) thông qua FastHTML session.
   - Middleware kiểm tra trạng thái đăng nhập trước khi cho phép truy cập các trang nội bộ.
 
-### 2.3. Khối Mô hình Dữ liệu (Data Models)
+### 2.5. Khối Mô hình Dữ liệu (Data Models)
 - **Vị trí**: `app/models/__init__.py`
 - **Mô tả**: Định nghĩa cấu trúc cơ sở dữ liệu sử dụng SQLModel (kết hợp giữa Pydantic và SQLAlchemy).
 - **Các thực thể (Entities)**:
@@ -37,18 +49,18 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name).
   - **ExecutionMessage**: Lưu trữ lịch sử hội thoại và log của mỗi lần thực thi (execution_id, role, content, metrics).
 
-### 2.4. Khối Cơ sở dữ liệu (Database Core)
+### 2.6. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
 - **Mô tả**: Quản lý kết nối đến cơ sở dữ liệu SQLite (`system.db`).
 - **Thành phần**:
   - Khởi tạo Engine kết nối.
   - Cung cấp Session cho các thao tác truy vấn dữ liệu.
 
-### 2.5. Khối Tiện ích và Khởi tạo (Scripts)
+### 2.7. Khối Tiện ích và Khởi tạo (Scripts)
 - **Vị trí**: `scripts/init_db.py`
 - **Mô tả**: Script dùng để khởi tạo cấu trúc bảng trong cơ sở dữ liệu và tạo dữ liệu mẫu (seed data) ban đầu khi triển khai hệ thống.
 
-### 2.6. Khối Quản lý Người dùng (User Management)
+### 2.8. Khối Quản lý Người dùng (User Management)
 - **Vị trí**: `app/routers/users.py`
 - **Mô tả**: Cung cấp các chức năng quản lý người dùng dành cho Admin.
 - **Thành phần**:
@@ -59,7 +71,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Chỉnh sửa thông tin người dùng.
 
 
-### 2.7. Khối Quản lý Dự án (Project Management)
+### 2.9. Khối Quản lý Dự án (Project Management)
 - **Vị trí**: `app/routers/projects.py`
 - **Mô tả**: Cung cấp các chức năng quản lý danh sách dự án dành cho Admin.
 - **Thành phần**:
@@ -72,7 +84,7 @@ Hệ thống được chia thành các khối chức năng chính sau:
 
 
 
-### 2.8. Khối Hoạt động của Tôi (My Activity)
+### 2.10. Khối Hoạt động của Tôi (My Activity)
 - **Vị trí**: `app/routers/activity.py`
 - **Mô tả**: Cung cấp giao diện tập trung cho các nhiệm vụ mà người dùng hiện tại được giao phụ trách.
 - **Thành phần**:

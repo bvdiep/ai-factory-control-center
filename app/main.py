@@ -125,10 +125,12 @@ css = Style('''
     }
 ''')
 
+from app.core.config import settings
+
 app, rt = fast_app(
     hdrs=(css, Script(src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js")),
     before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico']),
-    secret_key="super-secret-key"
+    secret_key=settings.SECRET_KEY
 )
 
 def render_nav(user=None):
