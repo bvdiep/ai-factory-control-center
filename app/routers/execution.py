@@ -95,6 +95,11 @@ def setup_execution_routes(rt, render_nav):
                     ),
                     Button("Execute", type="submit", id="execute-btn", style="width: 150px;"),
                     Div(
+                        A("Force complete", href="#",
+                          id="force-complete-btn",
+                          style="color: #ef4444; font-weight: bold;" if execution.status != "completed" else "color: #9ca3af; cursor: not-allowed; pointer-events: none;",
+                          onclick="if(confirm('Are you sure you want to force complete this execution?')) { fetch('/projects/" + str(project_id) + "/phases/" + str(phase_id) + "/force-complete/" + str(execution.id) + "', {method: 'POST'}).then(r => { if(r.ok) location.reload(); }); } return false;"),
+                        " | ",
                         A("Conversation", href="#", 
                           hx_get=f"/projects/{project_id}/phases/{phase_id}/conversation/{execution.id}",
                           hx_target="#conversation-content-container",
@@ -194,6 +199,18 @@ def setup_execution_routes(rt, render_nav):
                                     const promptField = document.querySelector('textarea[name="prompt"]');
                                     btn.disabled = !promptField || promptField.value.trim() === '';
                                     btn.innerText = btn.dataset.originalText || 'Execute';
+                                }}
+                                const forceBtn = document.getElementById('force-complete-btn');
+                                if (forceBtn) {{
+                                    if (data.status === 'completed') {{
+                                        forceBtn.style.color = '#9ca3af';
+                                        forceBtn.style.cursor = 'not-allowed';
+                                        forceBtn.style.pointerEvents = 'none';
+                                    }} else {{
+                                        forceBtn.style.color = '#ef4444';
+                                        forceBtn.style.cursor = 'pointer';
+                                        forceBtn.style.pointerEvents = 'auto';
+                                    }}
                                 }}
                                 if (data.metrics) {{
                                     const metricsBar = document.getElementById('metrics-bar');
@@ -418,3 +435,21 @@ def setup_execution_routes(rt, render_nav):
                 conversation_content = Div(*message_items, id="conversation-content", style="max-height: 500px; overflow-y: auto;")
 
             return conversation_content
+
+    @rt('/projects/{project_id}/phases/{phase_id}/force-complete/{execution_id}', methods=['POST'])
+    async def force_complete_execution(project_id: int, phase_id: int, execution_id: int, session):
+        user_id = session.get('user_id')
+        with Session(engine) as db_session:
+            user = db_session.get(User, user_id)
+            if not user:
+                return "Unauthorized", 401
+
+            execution = db_session.get(Execution, execution_id)
+            if not execution or execution.phase_id != phase_id:
+                return "Not found", 404
+
+            execution.status = "completed"
+            db_session.add(execution)
+            db_session.commit()
+
+            return {"status": "success", "message": "Execution force completed"}

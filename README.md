@@ -40,6 +40,11 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
+### Clean build docker
+```bash
+docker builder prune -a
+```
+
 ## Cấu trúc dự án
 - `app/main.py`: Entry point của ứng dụng FastHTML.
 - `app/models/__init__.py`: Định nghĩa các bảng dữ liệu bằng SQLModel.

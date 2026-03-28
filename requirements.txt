@@ -1,13 +1,29 @@
-sqlmodel
-bcrypt
-uvicorn
+# Web Framework & Server
 python-fasthtml==0.12.50
-sse-starlette==3.3.3
 starlette==0.52.1
-openhands-sdk
-openhands-tools
-litellm
-python-dotenv
-markdown
-markupsafe
-websockets<14
+sse-starlette==3.3.3
+uvicorn==0.42.0
+python-multipart==0.0.22
+
+# AI & Agents (Core)
+openhands-sdk==1.15.0
+openhands-tools==1.15.0
+litellm==1.80.10
+anthropic==0.76.0
+openai==2.16.0
+google-genai==1.65.0
+
+# Database & Logic
+sqlmodel==0.0.37
+SQLAlchemy==2.0.48
+pydantic==2.12.5
+bcrypt==5.0.0
+python-dotenv==1.2.1
+
+# Utilities
+aiohttp==3.13.3
+httpx==0.28.1
+rich==14.3.1
+Markdown==3.10.2
+MarkupSafe==3.0.3
+PyYAML==6.0.3
