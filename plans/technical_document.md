@@ -179,13 +179,15 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
     - **Nhiệm vụ (Mission)**: Hiển thị chi tiết nội dung nhiệm vụ cần thực hiện và Skill của Role.
     - **Thanh Metrics**: Hiển thị các chỉ số tổng hợp của các lần thực thi (Token In, Token Out, Reasoning, Cache Read, Cache Hit, Avg Latency, Total Cost).
     - **Form thực thi**:
-        - Ô nhập **Prompt** (TextArea full-width).
+        - Ô nhập **Prompt** (TextArea full-width). Sau khi nhấn nút Execute và thực thi thành công, nội dung ô Prompt sẽ tự động được xóa bỏ.
         - Dropdown chọn **Model** (gemini-3-flash-preview, openai-gpt-5.4-mini).
-        - Nút **Execute** để bắt đầu chạy Agent.
+        - Nút **Execute** để bắt đầu chạy Agent. Nút này chỉ được kích hoạt (enabled) khi Phase ở trạng thái `Start` hoặc `Processing`. Nếu ở trạng thái khác, nút sẽ bị vô hiệu hóa (disabled, màu xám) và hiển thị ghi chú "Wrong phase status" bên cạnh.
+        - Link **Make Processed**: Hiển thị bên trái link "Force complete" khi Phase ở trạng thái `Start` hoặc `Processing`. Khi nhấn vào, hệ thống yêu cầu xác nhận trước khi chuyển trạng thái của Phase thành `Processed`.
         - Nút **Conversation** để mở modal xem lịch sử hội thoại và chi tiết metrics của từng tin nhắn.
         - **Log Console**: Ô hiển thị log quá trình thực thi với giao diện kiểu terminal/console, được stream realtime qua Server-Sent Events (SSE).
 - **Cơ chế hoạt động**:
     - Sử dụng `openhands.sdk` (Agent, LLM, LocalConversation, LocalWorkspace) để thực thi nhiệm vụ.
+    - Khi người dùng nhấn **Execute**, nếu Phase đang ở trạng thái `Start`, hệ thống sẽ tự động chuyển trạng thái sang `Processing`.
     - Quá trình thực thi chạy ngầm (background task) và ghi log ra file.
     - Giao diện web liên tục cập nhật trạng thái và metrics thông qua polling (AJAX) và stream log (SSE).
     - Lưu trữ toàn bộ tin nhắn (user, agent) và metrics (token, cost, latency) vào cơ sở dữ liệu (`Execution`, `ExecutionMessage`).

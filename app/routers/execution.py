@@ -66,7 +66,7 @@ def setup_execution_routes(rt, render_nav):
                     Div(Strong("Project: "), project.name),
                     Div(Strong("Workspace: "), project.path),
                     Div(
-                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'processed' else '#3b82f6' if phase.status == 'running' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;")
+                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'Processed' else '#3b82f6' if phase.status == 'Processing' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;")
                     )
                 )
             )
@@ -82,8 +82,19 @@ def setup_execution_routes(rt, render_nav):
                 )
             )
 
+            can_execute = phase.status in ["Start", "Processing"]
+            
+            make_processed_link = ""
+            if phase.status in ["Start", "Processing"]:
+                make_processed_link = Span(
+                    A("Make Processed", href="#",
+                      style="color: #ef4444; font-weight: bold;",
+                      onclick=f"if(confirm('Are you sure you want to mark this phase as Processed?')) {{ fetch('/projects/{project_id}/phases/{phase_id}/make-processed', {{method: 'POST'}}).then(r => {{ if(r.ok) location.reload(); }}); }} return false;"),
+                    " | "
+                )
+
             execution_form = Form(
-                Label("Prompt", Textarea(name="prompt", rows=5, placeholder="Enter your prompt here...")),
+                Label("Prompt", Textarea(name="prompt", id="prompt-textarea", rows=5, placeholder="Enter your prompt here...")),
                 Grid(
                     Div(
                         Select(
@@ -92,8 +103,13 @@ def setup_execution_routes(rt, render_nav):
                             name="model"
                         )
                     ),
-                    Button("Execute", type="submit", id="execute-btn", style="width: 150px;"),
                     Div(
+                        Button("Execute", type="submit", id="execute-btn", 
+                               style="width: 150px;" + ("background-color: #9ca3af; border-color: #9ca3af; cursor: not-allowed;" if not can_execute else ""),
+                               disabled=not can_execute)
+                    ),
+                    Div(
+                        make_processed_link,
                         A("Force complete", href="#",
                           id="force-complete-btn",
                           style="color: #ef4444; font-weight: bold;" if execution.status != "completed" else "color: #9ca3af; cursor: not-allowed; pointer-events: none;",
@@ -107,6 +123,10 @@ def setup_execution_routes(rt, render_nav):
                         style="text-align: right;"
                     ),
                     style="margin-top: 1rem;"
+                ),
+                Div(
+                    Small(" Wrong phase status", style="color: #6b7280; vertical-align: middle;") if not can_execute else "",
+                    style="display: flex; align-items: center;"
                 ),
                 hx_post=f"/projects/{project_id}/phases/{phase_id}/execute",
                 hx_target="#log-container",
@@ -190,13 +210,17 @@ def setup_execution_routes(rt, render_nav):
                             .then(r => r.json())
                             .then(data => {{
                                 const btn = document.getElementById('execute-btn');
+                                const canExecute = {str(can_execute).lower()};
                                 if (btn && data.status === 'running') {{
                                     btn.disabled = true;
                                     if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerText;
                                     btn.innerText = '⏳ Running...';
                                 }} else if (btn && (data.status === 'completed' || data.status === 'failed')) {{
                                     const promptField = document.querySelector('textarea[name="prompt"]');
-                                    btn.disabled = !promptField || promptField.value.trim() === '';
+                                    if (btn.innerText === '⏳ Running...') {{
+                                        if (promptField) promptField.value = '';
+                                    }}
+                                    btn.disabled = !canExecute || !promptField || promptField.value.trim() === '';
                                     btn.innerText = btn.dataset.originalText || 'Execute';
                                 }}
                                 const forceBtn = document.getElementById('force-complete-btn');
@@ -241,7 +265,8 @@ def setup_execution_routes(rt, render_nav):
                         const btn = document.getElementById('execute-btn');
                         function updateButtonState() {{
                             if (btn) {{
-                                btn.disabled = !promptField || promptField.value.trim() === '';
+                                const canExecute = {str(can_execute).lower()};
+                                btn.disabled = !canExecute || !promptField || promptField.value.trim() === '';
                             }}
                         }}
                         if (promptField) {{
@@ -311,7 +336,10 @@ def setup_execution_routes(rt, render_nav):
             db_session.add(user_msg)
             
             execution.status = "running"
+            if phase.status == "Start":
+                phase.status = "Processing"
             db_session.add(execution)
+            db_session.add(phase)
             db_session.commit()
 
             skill = phase.role.skill if phase.role else ""
@@ -458,3 +486,21 @@ def setup_execution_routes(rt, render_nav):
             db_session.commit()
 
             return {"status": "success", "message": "Execution force completed"}
+
+    @rt('/projects/{project_id}/phases/{phase_id}/make-processed', methods=['POST'])
+    async def make_processed(project_id: int, phase_id: int, session):
+        user_id = session.get('user_id')
+        with Session(engine) as db_session:
+            user = db_session.get(User, user_id)
+            if not user:
+                return "Unauthorized", 401
+
+            phase = db_session.get(Phase, phase_id)
+            if not phase or phase.project_id != project_id:
+                return "Not found", 404
+
+            phase.status = "Processed"
+            db_session.add(phase)
+            db_session.commit()
+
+            return {"status": "success", "message": "Phase marked as Processed"}
