@@ -2,9 +2,11 @@ import os
 import json
 import asyncio
 import html
+import markdown
+from markupsafe import Markup
 from datetime import datetime
 from fasthtml.common import *
-from sqlmodel import Session, select
+from sqlmodel import Session, select, asc
 from app.core.database import engine
 from app.models import User, Project, Phase, Execution, ExecutionMessage
 from dotenv import load_dotenv
@@ -246,9 +248,12 @@ def setup_execution_routes(rt, render_nav):
 
             header_card = Article(
                 Grid(
-                    Div(Strong("Project: "), project.name),
-                    Div(Strong("Workspace: "), project.path),
-                    Div(Strong("Status: "), phase.status)
+                    Div(Strong("Project: "), project.name, style="flex: 0 0 auto;"),
+                    Div(Strong("Workspace: "), project.path, style="flex: 1; min-width: 300px; word-break: break-all;"),
+                    Div(
+                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'completed' else '#3b82f6' if phase.status == 'running' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;")
+                    ),
+                    style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;"
                 )
             )
 
@@ -264,17 +269,81 @@ def setup_execution_routes(rt, render_nav):
             )
 
             execution_form = Form(
-                Label("Model", Select(
-                    Option("openai-gpt-4o-mini", value="openai/gpt-4o-mini"),
-                    Option("gemini-3-flash-preview", value="gemini/gemini-3-flash-preview"),
-                    name="model"
-                )),
                 Label("Prompt", Textarea(name="prompt", rows=5, placeholder="Enter your prompt here...")),
-                Button("Execute", type="submit", id="execute-btn", style="margin-top: 1rem;"),
+                Grid(
+                    Div(
+                        Select(
+                            Option("gemini-3-flash-preview", value="gemini/gemini-3-flash-preview"),
+                            Option("openai-gpt-5.4-mini", value="openai/gpt-5.4-mini"),
+                            name="model"
+                        )
+                    ),
+                    Button("Execute", type="submit", id="execute-btn", style="width: 150px;"),
+                    Div(
+                        A("Conversation", href="#", onclick="document.getElementById('conversation-modal').showModal(); return false;"),
+                        style="text-align: right;"
+                    ),
+                    style="margin-top: 1rem;"
+                ),
                 hx_post=f"/projects/{project_id}/phases/{phase_id}/execute",
                 hx_target="#log-container",
                 hx_swap="beforeend",
                 hx_indicator="#execute-btn"
+            )
+
+            messages = db_session.exec(
+                select(ExecutionMessage).where(ExecutionMessage.execution_id == execution.id).order_by(asc(ExecutionMessage.id))
+            ).all()
+
+            message_items = []
+            for msg in messages:
+                if msg.role == 'user':
+                    content = html.escape(msg.content).replace('\n', '<br>')
+                else:
+                    content = Markup(markdown.markdown(msg.content, extensions=['fenced_code']))
+                
+                msg_body = Div(
+                    Strong(f"{msg.role.upper()}: "),
+                    Div(content, style="margin-top: 0.25rem;"),
+                )
+                
+                if msg.metrics:
+                    try:
+                        m = json.loads(msg.metrics)
+                        metrics_info = Div(
+                            Small(
+                                Span(f"Tokens: {m.get('prompt_tokens', 0)} in / {m.get('completion_tokens', 0)} out | "),
+                                Span(f"Cost: ${m.get('cost', 0):.4f} | "),
+                                Span(f"Latency: {m.get('latency', 0):.2f}s"),
+                                style="color: #666;"
+                            ),
+                            style="margin-top: 0.5rem;"
+                        )
+                        msg_body = Div(msg_body, metrics_info)
+                    except:
+                        pass
+                
+                msg_div = Div(
+                    msg_body,
+                    style=f"margin-bottom: 1rem; padding: 0.75rem; border-radius: 8px; background: {'#e0f2fe' if msg.role == 'user' else '#f0fdf4'};"
+                )
+                message_items.append(msg_div)
+
+            conversation_content = Div(*message_items) if message_items else P("No messages yet.")
+            if message_items:
+                conversation_content = Div(*message_items, id="conversation-content", style="max-height: 500px; overflow-y: auto;")
+
+            conversation_modal = Dialog(
+                Article(
+                    Header(H3("Conversation")),
+                    conversation_content,
+                    Footer(
+                        Button("Close", onclick="document.getElementById('conversation-modal').close()", type="button")
+                    )
+                ),
+                id="conversation-modal",
+                style="max-width: 90vw; width: 90vw; max-height: 80vh;",
+                onopen="setTimeout(() => { const c = document.getElementById('conversation-content'); if(c) c.scrollTop = c.scrollHeight; }, 50)"
             )
 
             log_display = Div(
@@ -301,7 +370,8 @@ def setup_execution_routes(rt, render_nav):
                                     if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerText;
                                     btn.innerText = '⏳ Running...';
                                 }} else if (btn && (data.status === 'completed' || data.status === 'failed')) {{
-                                    btn.disabled = false;
+                                    const promptField = document.querySelector('textarea[name="prompt"]');
+                                    btn.disabled = !promptField || promptField.value.trim() === '';
                                     btn.innerText = btn.dataset.originalText || 'Execute';
                                 }}
                                 if (data.metrics) {{
@@ -330,6 +400,17 @@ def setup_execution_routes(rt, render_nav):
                 """),
                 Script(f"""
                     (function() {{
+                        const promptField = document.querySelector('textarea[name="prompt"]');
+                        const btn = document.getElementById('execute-btn');
+                        function updateButtonState() {{
+                            if (btn) {{
+                                btn.disabled = !promptField || promptField.value.trim() === '';
+                            }}
+                        }}
+                        if (promptField) {{
+                            promptField.addEventListener('input', updateButtonState);
+                            updateButtonState();
+                        }}
                         const term = document.getElementById('log-container');
                         const source = new EventSource('/projects/{project_id}/phases/{phase_id}/stream/{execution.id}');
                         source.onmessage = function(event) {{
@@ -344,12 +425,24 @@ def setup_execution_routes(rt, render_nav):
                 """)
             )
 
-            return Title(f"Execute Phase - {project.name}"), render_nav(user), Main(
+            extra_css = Style('''
+                dialog > article {
+                    max-width: 90vw !important;
+                    width: 90vw !important;
+                }
+                dialog > article > * {
+                    max-height: 85vh;
+                    overflow-y: auto;
+                }
+            ''')
+
+            return Title(f"Execute Phase - {project.name}"), extra_css, render_nav(user), Main(
                 H1("Execution"),
                 metrics_bar,
                 header_card,
                 mission_card,
                 execution_form,
+                conversation_modal,
                 log_display,
                 cls="container"
             )

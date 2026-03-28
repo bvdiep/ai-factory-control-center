@@ -7,3 +7,5 @@ starlette==0.52.1
 openhands-sdk
 litellm
 python-dotenv
+markdown
+markupsafe
