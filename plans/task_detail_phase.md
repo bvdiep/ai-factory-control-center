@@ -1,3 +1,5 @@
+#4
+
 **Nhiệm vụ**: Sửa khái niệm user trong Project và đưa một số actions của Phase vào trang detail phase, ô Phase info.
 
 **Code base**: /home/dd/work/diep/ai-factory-control-center

@@ -1,3 +1,5 @@
+#3
+
 **Nhiệm vụ**: Thêm trang Projects và update entity Project, Phase, User.
 
 **Code base**: /home/dd/work/diep/ai-factory-control-center

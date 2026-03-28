@@ -1,3 +1,5 @@
+#5
+
 **Nhiệm vụ**: Hiển thị màn hình execution khi user thực hiện nhiệm vụ
 
 **Code base**: /home/dd/work/diep/ai-factory-control-center

@@ -1,4 +1,6 @@
-**Nhiệm vụ**: Tạo ra entity Phase của Project.
+#2
+
+**Nhiệm vụ**: Tạo ra entity Phase của Project
 
 **Code base**: /home/dd/work/diep/ai-factory-control-center
 

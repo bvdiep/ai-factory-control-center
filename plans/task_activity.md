@@ -1,3 +1,5 @@
+#6
+
 **Nhiệm vụ**: Làm màn hình liệt kê các nhiệm vụ mình phải làm
 
 **Code base**: /home/dd/work/diep/ai-factory-control-center
