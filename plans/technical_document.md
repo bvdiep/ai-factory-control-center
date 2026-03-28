@@ -68,6 +68,14 @@ Hệ thống được chia thành các khối chức năng chính sau:
   - Xóa dự án.
 
 
+
+### 2.8. Khối Hoạt động của Tôi (My Activity)
+- **Vị trí**: `app/routers/activity.py`
+- **Mô tả**: Cung cấp giao diện tập trung cho các nhiệm vụ mà người dùng hiện tại được giao phụ trách.
+- **Thành phần**:
+  - Truy vấn các dự án mà người dùng tham gia ít nhất một giai đoạn (Phase).
+  - Sắp xếp dự án theo thời gian tạo mới nhất.
+
 ## 3. Các chức năng của hệ thống
 
 ### 3.1. Chức năng Đăng nhập (Login)
@@ -128,6 +136,17 @@ Hệ thống được chia thành các khối chức năng chính sau:
 - Chỉnh sửa dự án qua modal popup.
 - Xóa dự án (có xác nhận).
 - Tự động cập nhật trường `updated_at` mỗi khi chỉnh sửa dự án.
+
+
+### 3.8. Chức năng Hoạt động của Tôi (My Activity)
+- Truy cập tại route `/my-activity` (yêu cầu đã đăng nhập).
+- Liệt kê các Dự án (Projects) mà người dùng hiện tại được gán vào ít nhất một giai đoạn (Phase).
+- Các dự án được sắp xếp theo thứ tự `created_at` giảm dần.
+- Với mỗi dự án, hiển thị danh sách các giai đoạn (Phases) dưới dạng danh sách các thẻ (cards) full-width, sắp xếp theo `order`.
+- Thông tin mỗi giai đoạn bao gồm: Thứ tự (Order), Nhiệm vụ (Mission), Trạng thái (Status), Người thực hiện (Assigned User).
+- Phân biệt hiển thị qua thẻ:
+    - Nếu giai đoạn do chính người dùng hiện tại phụ trách: Thẻ có viền nổi bật, có nút **Execute** (hiện tại hiển thị "Under construction") và font chữ bình thường.
+    - Nếu giai đoạn do người khác phụ trách: Thẻ được làm mờ (opacity) và font chữ nhạt hơn để dễ phân biệt.
 
 
 ## 4. Môi trường triển khai

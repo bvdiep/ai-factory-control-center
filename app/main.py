@@ -13,6 +13,7 @@ from app.models import User, Project, Role, Phase
 from app.core.auth import authenticate_user, auth_beforeware
 from app.routers.users import setup_user_routes
 from app.routers.projects import setup_project_routes
+from app.routers.activity import setup_activity_routes
 
 css = Style('''
     .login-page {
@@ -34,6 +35,80 @@ css = Style('''
     .login-container h1 {
         text-align: center;
     }
+    .phase-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .phase-card {
+        padding: 1.25rem;
+        border-radius: var(--pico-border-radius);
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        position: relative;
+        transition: transform 0.2s;
+    }
+    .phase-card:hover {
+        transform: translateY(-4px);
+    }
+    .phase-card.assigned {
+        border: 1px solid var(--pico-primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .phase-card.unassigned {
+        opacity: 0.6;
+        filter: grayscale(0.5);
+    }
+    .phase-badge {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .phase-order {
+        background: var(--pico-primary);
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+    .phase-status {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        background: var(--pico-muted-background-color);
+    }
+    .phase-mission {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        flex-grow: 1;
+        margin: 0;
+    }
+    .phase-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--pico-muted-border-color);
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    .phase-user {
+        font-size: 0.85rem;
+        color: var(--pico-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
 ''')
 
 app, rt = fast_app(
@@ -44,6 +119,8 @@ app, rt = fast_app(
 
 def render_nav(user=None):
     nav_items = [Li(A("Home", href="/dashboard", cls="secondary"))]
+    if user:
+        nav_items.append(Li(A("My Activity", href="/my-activity", cls="secondary")))
     if user and user.role and user.role.name == 'Admin':
         nav_items.append(Li(A("Projects", href="/projects", cls="secondary")))
         nav_items.append(Li(A("Users", href="/users", cls="secondary")))
@@ -57,6 +134,7 @@ def render_nav(user=None):
 
 setup_user_routes(rt, render_nav)
 setup_project_routes(rt, render_nav)
+setup_activity_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
