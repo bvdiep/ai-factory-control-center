@@ -5,7 +5,7 @@ from app.models import User, Role
 from app.core.auth import get_password_hash
 import bcrypt
 from datetime import datetime
-
+import json
 
 def get_user_by_id(db_session, user_id):
     return db_session.exec(select(User).where(User.id == user_id)).first()
@@ -21,7 +21,7 @@ def check_admin(session):
 
 def setup_user_routes(rt, render_nav):
     @rt('/users', methods=['GET'])
-    def list_users(session, page: int = 1, status: str = None, q: str = None):
+    def list_users(session, page: int = 1, status: str = None, q: str = None, error: str = None):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         
         limit = 10
@@ -40,6 +40,7 @@ def setup_user_routes(rt, render_nav):
             
             # Get users with roles joined
             users = db_session.exec(query.offset(offset).limit(limit)).all()
+            roles = db_session.exec(select(Role)).all()
             
             # Get current user for nav
             current_user = db_session.exec(select(User).where(User.id == session.get('user_id'))).first()
@@ -79,71 +80,109 @@ def setup_user_routes(rt, render_nav):
                     Td(u.role.name if u.role else ""),
                     Td(u.status),
                     Td(
-                        A("Edit", href=f"/users/edit/{u.id}")
+                        A("Edit", href="#", 
+                          onclick=f"openUserEditModal({u.id}, {json.dumps(u.username)}, {json.dumps(u.name or '')}, {u.role_id or 'null'}, '{u.status}')")
                     )
                 ) for u in users
             ]
 
+            add_modal = Dialog(
+                Article(
+                    Header(H3("Add New User")),
+                    Form(
+                        Label("Username", Input(name="username", required=True)),
+                        Label("Name", Input(name="name")),
+                        Label("Password", Input(name="password", type="password", required=True)),
+                        Label("Role", Select(
+                            *[Option(r.name, value=r.id) for r in roles],
+                            name="role_id"
+                        )),
+                        Label("Status", Select(
+                            Option("Active", value="active"),
+                            Option("Inactive", value="inactive"),
+                            name="status"
+                        )),
+                        Footer(
+                            Group(
+                                Button("Cancel", cls="secondary", onclick="document.getElementById('user-add-modal').close()", type="button"),
+                                Button("Save User", type="submit")
+                            )
+                        ),
+                        method="post", action="/users/add"
+                    )
+                ),
+                id="user-add-modal"
+            )
+
+            edit_modal = Dialog(
+                Article(
+                    Header(H3("Edit User")),
+                    Form(
+                        Input(type="hidden", name="id", id="edit-user-id"),
+                        Label("Username", Input(name="username", id="edit-username", required=True)),
+                        Label("Name", Input(name="name", id="edit-name")),
+                        Label("Password (leave blank to keep current)", 
+                              Input(name="password", type="password")),
+                        Label("Role", Select(
+                            *[Option(r.name, value=r.id) for r in roles],
+                            name="role_id", id="edit-role-id"
+                        )),
+                        Label("Status", Select(
+                            Option("Active", value="active"),
+                            Option("Inactive", value="inactive"),
+                            name="status", id="edit-status"
+                        )),
+                        Footer(
+                            Group(
+                                Button("Cancel", cls="secondary", onclick="document.getElementById('user-edit-modal').close()", type="button"),
+                                Button("Update User", type="submit")
+                            )
+                        ),
+                        method="post", action="/users/edit"
+                    )
+                ),
+                id="user-edit-modal"
+            )
+
+            js = Script("""
+                function openUserEditModal(id, username, name, roleId, status) {
+                    document.getElementById('edit-user-id').value = id;
+                    document.getElementById('edit-username').value = username;
+                    document.getElementById('edit-name').value = name;
+                    document.getElementById('edit-role-id').value = roleId || '';
+                    document.getElementById('edit-status').value = status;
+                    document.getElementById('user-edit-modal').showModal();
+                }
+            """)
+
             return Title("User Management"), render_nav(current_user), Main(
+                js,
                 Div(
                     H1("User Management", style="margin-bottom: 0;"),
-                    A("Add New User", href="/users/add"),
+                    A("Add New User", href="#", onclick="document.getElementById('user-add-modal').showModal()"),
                     style="display: flex; justify-content: space-between; align-items: center;"
                 ),
                 Hr(),
+                P(error, style="color: red;") if error else None,
                 filter_form,
                 Table(
                     Thead(Tr(Th("ID"), Th("Username"), Th("Name"), Th("Role"), Th("Status"), Th("Actions", style="width: 120px;"))),
                     Tbody(*user_rows)
                 ),
                 pagination,
+                add_modal,
+                edit_modal,
                 cls="container"
             )
-
-    def user_form(user=None, roles=[], error=None, current_user=None):
-        title = "Edit User" if user else "Add User"
-        action = f"/users/edit/{user.id}" if user else "/users/add"
-        return Title(title), render_nav(current_user), Main(
-            H1(title),
-            P(error, style="color: red;") if error else None,
-            Form(
-                Label("Username", Input(name="username", value=user.username if user else "", required=True)),
-                Label("Name", Input(name="name", value=(user.name or "") if user else "")),
-                Label("Password" + (" (leave blank to keep current)" if user else ""), 
-                      Input(name="password", type="password", required=not user)),
-                Label("Role", Select(
-                    *[Option(r.name, value=r.id, selected=user and r.id == user.role_id) for r in roles],
-                    name="role_id"
-                )),
-                Label("Status", Select(
-                    Option("Active", value="active", selected=user and user.status == "active"),
-                    Option("Inactive", value="inactive", selected=user and user.status == "inactive"),
-                    name="status"
-                )),
-                Button("Save User", type="submit"),
-                method="post", action=action
-            ),
-            cls="container"
-        )
-
-    @rt('/users/add', methods=['GET'])
-    def get_add_user(session):
-        if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
-        with Session(engine) as db_session:
-            roles = db_session.exec(select(Role)).all()
-            current_user = get_user_by_id(db_session, session.get('user_id'))
-            return user_form(roles=roles, current_user=current_user)
 
     @rt('/users/add', methods=['POST'])
     def post_add_user(session, username: str, name: str, password: str, role_id: int, status: str):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         with Session(engine) as db_session:
-            current_user = get_user_by_id(db_session, session.get('user_id'))
-            roles = db_session.exec(select(Role)).all()
             # Check for unique username
             existing = db_session.exec(select(User).where(User.username == username)).first()
             if existing:
-                return user_form(roles=roles, error="Username already exists", current_user=current_user)
+                return list_users(session, error="Username already exists")
             
             new_user = User(
                 username=username,
@@ -156,30 +195,18 @@ def setup_user_routes(rt, render_nav):
             db_session.commit()
             return RedirectResponse('/users', status_code=303)
 
-    @rt('/users/edit/{user_id}', methods=['GET'])
-    def get_edit_user(session, user_id: int):
+    @rt('/users/edit', methods=['POST'])
+    def post_edit_user(session, id: int, username: str, name: str, password: str, role_id: int, status: str):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         with Session(engine) as db_session:
-            user = get_user_by_id(db_session, user_id)
-            if not user: return "User not found"
-            roles = db_session.exec(select(Role)).all()
-            current_user = get_user_by_id(db_session, session.get('user_id'))
-            return user_form(user=user, roles=roles, current_user=current_user)
-
-    @rt('/users/edit/{user_id}', methods=['POST'])
-    def post_edit_user(session, user_id: int, username: str, name: str, password: str, role_id: int, status: str):
-        if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
-        with Session(engine) as db_session:
-            current_user = get_user_by_id(db_session, session.get('user_id'))
-            roles = db_session.exec(select(Role)).all()
-            user = get_user_by_id(db_session, user_id)
-            if not user: return "User not found"
+            user = get_user_by_id(db_session, id)
+            if not user: return RedirectResponse('/users', status_code=303)
             
             # Check for unique username if it changed
             if username != user.username:
                 existing = db_session.exec(select(User).where(User.username == username)).first()
                 if existing:
-                    return user_form(user=user, roles=roles, error="Username already exists", current_user=current_user)
+                    return list_users(session, error="Username already exists")
             
             user.username = username
             user.name = name

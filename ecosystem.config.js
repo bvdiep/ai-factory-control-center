@@ -5,7 +5,7 @@ module.exports = {
       script: "app/main.py",
       interpreter: "./.venv/bin/python",
       env: {
-        PORT: 5001,
+        PORT: 5002,
         NODE_ENV: "production"
       },
       watch: false,

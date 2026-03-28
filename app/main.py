@@ -15,6 +15,7 @@ from app.routers.users import setup_user_routes
 from app.routers.projects import setup_project_routes
 from app.routers.activity import setup_activity_routes
 from app.routers.execution import setup_execution_routes
+from app.routers.roles import setup_role_routes
 
 css = Style('''
     .login-page {
@@ -140,6 +141,7 @@ def render_nav(user=None):
     if user and user.role and user.role.name == 'Admin':
         nav_items.append(Li(A("Projects", href="/projects", cls="secondary")))
         nav_items.append(Li(A("Users", href="/users", cls="secondary")))
+        nav_items.append(Li(A("Role-Skill", href="/roles", cls="secondary")))
     nav_items.append(Li(A("Logout", href="/logout", cls="secondary")))
     
     return Nav(
@@ -152,6 +154,7 @@ setup_user_routes(rt, render_nav)
 setup_project_routes(rt, render_nav)
 setup_activity_routes(rt, render_nav)
 setup_execution_routes(rt, render_nav)
+setup_role_routes(rt, render_nav)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(

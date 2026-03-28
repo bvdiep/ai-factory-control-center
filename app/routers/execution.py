@@ -78,8 +78,8 @@ def setup_execution_routes(rt, render_nav):
                     P(phase.mission, style="margin-top: 1rem;")
                 ),
                 Details(
-                    Summary(Strong("System Prompt")),
-                    Pre(phase.role.system_prompt if phase.role and phase.role.system_prompt else "No system prompt defined", style="margin-top: 1rem;")
+                    Summary(Strong("Skill")),
+                    Pre(phase.role.skill if phase.role and phase.role.skill else "No skill defined", style="margin-top: 1rem;")
                 )
             )
 
@@ -294,7 +294,7 @@ def setup_execution_routes(rt, render_nav):
             db_session.add(execution)
             db_session.commit()
 
-            system_prompt = phase.role.system_prompt if phase.role else ""
+            skill = phase.role.skill if phase.role else ""
             
             asyncio.create_task(asyncio.to_thread(
                 run_agent_in_background,
@@ -304,7 +304,7 @@ def setup_execution_routes(rt, render_nav):
                 model,
                 prompt,
                 project.path,
-                system_prompt
+                skill
             ))
 
             return Div(f"[{datetime.utcnow().isoformat()}] Started execution with model {model}\n")

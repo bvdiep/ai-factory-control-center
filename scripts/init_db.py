@@ -22,7 +22,7 @@ def seed_db():
         ]
         roles = {}
         for r_name in roles_data:
-            role = Role(name=r_name, system_prompt=f"You are a {r_name}.")
+            role = Role(name=r_name, skill=f"You are a {r_name}.")
             session.add(role)
             roles[r_name] = role
         

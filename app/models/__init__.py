@@ -5,7 +5,7 @@ from datetime import datetime
 class Role(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
-    system_prompt: Optional[str] = None
+    skill: Optional[str] = None
     
     users: List["User"] = Relationship(back_populates="role")
 

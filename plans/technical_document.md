@@ -43,7 +43,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - **Mô tả**: Định nghĩa cấu trúc cơ sở dữ liệu sử dụng SQLModel (kết hợp giữa Pydantic và SQLAlchemy).
 - **Các thực thể (Entities)**:
   - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status, created_at, updated_at).
-  - **Role**: Định nghĩa vai trò của người dùng (name, system_prompt).
+  - **Role**: Định nghĩa vai trò của người dùng (name, skill).
   - **Project**: Quản lý thông tin dự án (name, description, path, config_override, created_at, updated_at, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM).
   - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
   - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name).
@@ -67,8 +67,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
   - Danh sách người dùng với phân trang (10 users/page).
   - Tìm kiếm theo `username` hoặc `name`.
   - Lọc theo trạng thái `status`.
-  - Thêm mới người dùng (yêu cầu `username` duy nhất).
-  - Chỉnh sửa thông tin người dùng.
+  - Thêm mới người dùng qua modal popup (yêu cầu `username` duy nhất).
+  - Chỉnh sửa thông tin người dùng qua modal popup.
 
 
 ### 2.9. Khối Quản lý Dự án (Project Management)
@@ -91,6 +91,15 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
   - Truy vấn các dự án mà người dùng tham gia ít nhất một giai đoạn (Phase).
   - Sắp xếp dự án theo thời gian tạo mới nhất.
 
+
+### 2.11. Khối Quản lý Role-Skill (Role Management)
+- **Vị trí**: `app/routers/roles.py`
+- **Mô tả**: Cung cấp các chức năng quản lý vai trò (Role) và kỹ năng (Skill) đi kèm dành cho Admin.
+- **Thành phần**:
+  - Danh sách các Role.
+  - Thêm mới Role qua modal popup (yêu cầu `name` duy nhất).
+  - Chỉnh sửa thông tin Role qua modal popup (tên, skill).
+  - Xóa Role (chỉ khi Role chưa được gán cho bất kỳ người dùng nào).
 ## 3. Các chức năng của hệ thống
 
 ### 3.1. Chức năng Đăng nhập (Login)
@@ -119,8 +128,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Cho phép tìm kiếm người dùng theo `username` hoặc `name`.
 - Cho phép lọc danh sách người dùng theo trạng thái (`active`/`inactive`).
 - Hỗ trợ phân trang danh sách người dùng.
-- Thêm mới người dùng với các thông tin: username, name, password, role, status.
-- Sửa đổi thông tin người dùng hiện có.
+- Thêm mới người dùng qua modal popup với các thông tin: username, name, password, role, status.
+- Sửa đổi thông tin người dùng hiện có qua modal popup.
 - Ràng buộc: `username` phải là duy nhất trên toàn hệ thống.
 
 ### 3.5. Bảo vệ Route (Route Protection)
@@ -169,7 +178,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Giao diện có menu điều hướng tương tự như các trang khác, giúp người dùng dễ dàng di chuyển giữa các chức năng.
 - **Thành phần giao diện**:
     - **Thông tin tóm tắt**: Hiển thị tên Dự án, Đường dẫn Workspace và Trạng thái hiện tại của Phase.
-    - **Nhiệm vụ (Mission)**: Hiển thị chi tiết nội dung nhiệm vụ cần thực hiện và System Prompt của Role.
+    - **Nhiệm vụ (Mission)**: Hiển thị chi tiết nội dung nhiệm vụ cần thực hiện và Skill của Role.
     - **Thanh Metrics**: Hiển thị các chỉ số tổng hợp của các lần thực thi (Token In, Token Out, Reasoning, Cache Read, Cache Hit, Avg Latency, Total Cost).
     - **Form thực thi**:
         - Ô nhập **Prompt** (TextArea full-width).
@@ -183,6 +192,14 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
     - Giao diện web liên tục cập nhật trạng thái và metrics thông qua polling (AJAX) và stream log (SSE).
     - Lưu trữ toàn bộ tin nhắn (user, agent) và metrics (token, cost, latency) vào cơ sở dữ liệu (`Execution`, `ExecutionMessage`).
 
+
+### 3.10. Chức năng Quản lý Role-Skill (Role Management - Admin Only)
+- Chỉ hiển thị menu "Role-Skill" cho người dùng có vai trò `Admin`.
+- Truy cập tại route `/roles`.
+- Hiển thị danh sách các Role hiện có trong hệ thống.
+- Thêm mới Role qua modal popup: Nhập tên Role (duy nhất) và Skill (tùy chọn).
+- Chỉnh sửa Role qua modal popup: Cho phép thay đổi tên và Skill.
+- Xóa Role: Chỉ cho phép xóa nếu Role đó không được gán cho bất kỳ người dùng nào. Nếu có người dùng đang mang Role này, hệ thống sẽ từ chối xóa.
 
 ## 4. Môi trường triển khai
 - **Ngôn ngữ**: Python 3

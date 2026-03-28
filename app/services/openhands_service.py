@@ -11,6 +11,10 @@ from openhands.sdk.llm import LLM
 from openhands.sdk.conversation import LocalConversation
 from openhands.sdk.workspace import LocalWorkspace
 from openhands.sdk.event import Event, MessageEvent, ActionEvent, ObservationEvent
+from openhands.sdk.tool import Tool
+from openhands.tools.terminal import TerminalTool
+from openhands.tools.file_editor import FileEditorTool
+from openhands.tools.browser_use import BrowserToolSet
 
 class _FileWriter:
     """Redirect sys.stdout to a log file so all SDK print() output is captured."""
@@ -33,7 +37,7 @@ class _FileWriter:
         import sys
         return getattr(sys.__stdout__, "encoding", "utf-8")
 
-def run_agent_in_background(project_id, phase_id, execution_id, model_name, prompt, project_path, system_prompt):
+def run_agent_in_background(project_id, phase_id, execution_id, model_name, prompt, project_path, skill):
     import sys as _sys
 
     # Setup Log File early so stdout redirect can start immediately
@@ -50,11 +54,16 @@ def run_agent_in_background(project_id, phase_id, execution_id, model_name, prom
         api_key = settings.OPENAI_API_KEY if "gpt" in model_name else settings.GEMINI_API_KEY
         llm = LLM(model=model_name, api_key=api_key)
 
-        # Setup Agent
-        agent = Agent(llm=llm)
-
         # Setup Workspace
         workspace = LocalWorkspace(working_dir=project_path)
+
+        # Setup Agent with tools
+        tools = [
+            Tool(name=TerminalTool.name),
+            Tool(name=FileEditorTool.name),
+            Tool(name=BrowserToolSet.name),
+        ]
+        agent = Agent(llm=llm, tools=tools)
 
         # Setup Conversation session dir
         session_dir = os.path.join(settings.OPENHANDS_STORAGE_PATH, str(project_id), str(phase_id), "sessions")
@@ -112,8 +121,8 @@ def run_agent_in_background(project_id, phase_id, execution_id, model_name, prom
         )
 
         # Send initial prompt
-        if system_prompt:
-            prompt = f"System Instruction: {system_prompt}\n\nUser Request: {prompt}"
+        if skill:
+            prompt = f"System Instruction: {skill}\n\nUser Request: {prompt}"
 
         conversation.send_message(prompt)
 
