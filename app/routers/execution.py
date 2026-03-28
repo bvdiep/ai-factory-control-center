@@ -95,7 +95,11 @@ def setup_execution_routes(rt, render_nav):
                     ),
                     Button("Execute", type="submit", id="execute-btn", style="width: 150px;"),
                     Div(
-                        A("Conversation", href="#", onclick="document.getElementById('conversation-modal').showModal(); return false;"),
+                        A("Conversation", href="#", 
+                          hx_get=f"/projects/{project_id}/phases/{phase_id}/conversation/{execution.id}",
+                          hx_target="#conversation-content-container",
+                          hx_swap="innerHTML",
+                          onclick="document.getElementById('conversation-modal').showModal(); return false;"),
                         style="text-align: right;"
                     ),
                     style="margin-top: 1rem;"
@@ -144,9 +148,11 @@ def setup_execution_routes(rt, render_nav):
                 )
                 message_items.append(msg_div)
 
-            conversation_content = Div(*message_items) if message_items else P("No messages yet.")
-            if message_items:
-                conversation_content = Div(*message_items, id="conversation-content", style="max-height: 500px; overflow-y: auto;")
+            conversation_content = Div(
+                P("Click Conversation button to load messages.", style="color: #666; font-style: italic;"),
+                id="conversation-content-container", 
+                style="max-height: 500px; overflow-y: auto;"
+            )
 
             conversation_modal = Dialog(
                 Article(
@@ -158,7 +164,7 @@ def setup_execution_routes(rt, render_nav):
                 ),
                 id="conversation-modal",
                 style="max-width: 90vw; width: 90vw; max-height: 80vh;",
-                onopen="setTimeout(() => { const c = document.getElementById('conversation-content'); if(c) c.scrollTop = c.scrollHeight; }, 50)"
+                onopen="setTimeout(() => { const c = document.getElementById('conversation-content-container'); if(c) c.scrollTop = c.scrollHeight; }, 50)"
             )
 
             log_display = Div(
@@ -356,3 +362,59 @@ def setup_execution_routes(rt, render_nav):
                     "total_cost": total_cost
                 }
             }
+
+    @rt('/projects/{project_id}/phases/{phase_id}/conversation/{execution_id}')
+    async def get_conversation(project_id: int, phase_id: int, execution_id: int, session):
+        user_id = session.get('user_id')
+        with Session(engine) as db_session:
+            user = db_session.get(User, user_id)
+            if not user:
+                return "Unauthorized", 401
+
+            execution = db_session.get(Execution, execution_id)
+            if not execution or execution.phase_id != phase_id:
+                return "Not found", 404
+
+            messages = db_session.exec(
+                select(ExecutionMessage).where(ExecutionMessage.execution_id == execution_id).order_by(asc(ExecutionMessage.id))
+            ).all()
+
+            message_items = []
+            for msg in messages:
+                if msg.role == 'user':
+                    content = html.escape(msg.content).replace('\n', '<br>')
+                else:
+                    content = Markup(markdown.markdown(msg.content, extensions=['fenced_code']))
+                
+                msg_body = Div(
+                    Strong(f"{msg.role.upper()}: "),
+                    Div(content, style="margin-top: 0.25rem;"),
+                )
+                
+                if msg.metrics:
+                    try:
+                        m = json.loads(msg.metrics)
+                        metrics_info = Div(
+                            Small(
+                                Span(f"Tokens: {m.get('prompt_tokens', 0)} in / {m.get('completion_tokens', 0)} out | "),
+                                Span(f"Cost: ${m.get('cost', 0):.4f} | "),
+                                Span(f"Latency: {m.get('latency', 0):.2f}s"),
+                                style="color: #666;"
+                            ),
+                            style="margin-top: 0.5rem;"
+                        )
+                        msg_body = Div(msg_body, metrics_info)
+                    except:
+                        pass
+                
+                msg_div = Div(
+                    msg_body,
+                    style=f"margin-bottom: 1rem; padding: 0.75rem; border-radius: 8px; background: {'#e0f2fe' if msg.role == 'user' else '#f0dfd4'};"
+                )
+                message_items.append(msg_div)
+
+            conversation_content = Div(*message_items) if message_items else P("No messages yet.")
+            if message_items:
+                conversation_content = Div(*message_items, id="conversation-content", style="max-height: 500px; overflow-y: auto;")
+
+            return conversation_content
