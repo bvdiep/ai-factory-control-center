@@ -44,7 +44,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - **Các thực thể (Entities)**:
   - **User**: Lưu trữ thông tin người dùng (username, name, hashed_password, role_id, status, created_at, updated_at).
   - **Role**: Định nghĩa vai trò của người dùng (name, skill).
-  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, created_at, updated_at, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM).
+  - **Project**: Quản lý thông tin dự án (name, description, path, config_override, created_at, updated_at, status, user_id). Mỗi dự án có một người quản lý (Project Manager - PM). Trường `path` lưu tên thư mục tương đối (duy nhất, không khoảng trắng, chỉ bao gồm chữ cái, số, gạch dưới, gạch ngang, dấu chấm).
   - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `pending`, `init`, `processing`, `processed`, `cancel`, `done`.
   - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name).
   - **ExecutionMessage**: Lưu trữ lịch sử hội thoại và log của mỗi lần thực thi (execution_id, role, content, metrics).
@@ -156,8 +156,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Cho phép tìm kiếm dự án theo `name` hoặc `description`.
 - Cho phép lọc danh sách dự án theo trạng thái.
 - Hỗ trợ phân trang danh sách dự án.
-- Thêm mới dự án qua modal popup (không chuyển hướng trang).
-- Chỉnh sửa dự án qua modal popup.
+- Thêm mới dự án qua modal popup (không chuyển hướng trang). Yêu cầu `path` phải là duy nhất và chỉ chứa: chữ cái, số, gạch dưới, gạch ngang, dấu chấm. Không chứa khoảng trắng hay ký tự đặc biệt khác.
+- Chỉnh sửa dự án qua modal popup. Ràng buộc về `path` tương tự như khi thêm mới.
 - Xóa dự án (có xác nhận).
 - Tự động cập nhật trường `updated_at` mỗi khi chỉnh sửa dự án.
 

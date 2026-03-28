@@ -3,7 +3,7 @@ services:
     build: .
     container_name: fasthtml_openhands
     ports:
-      - "5001:5001"
+      - "5002:5001"
     volumes:
       # --- LỚP TRUYỀN TIN (Docker Control) ---
       - /var/run/docker.sock:/var/run/docker.sock

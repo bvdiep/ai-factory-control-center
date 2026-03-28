@@ -1,12 +1,34 @@
 from fasthtml.common import *
+from starlette.responses import Response
 from sqlmodel import Session, select, or_, func, col
 from app.core.database import engine
 from app.models import User, Project, Role
 from datetime import datetime
 import json
+import re
+
 
 def get_project_by_id(db_session, project_id):
     return db_session.exec(select(Project).where(Project.id == project_id)).first()
+
+
+def validate_project_path(path: str, db_session, project_id=None):
+    if not path:
+        return "Project path cannot be empty."
+    
+    if not re.match(r'^[a-zA-Z0-9._-]+$', path):
+        return "Project path can only contain letters, numbers, underscores, hyphens, and dots. No spaces or other special characters allowed."
+
+    # Check for uniqueness
+    query = select(Project).where(Project.path == path)
+    if project_id:
+        query = query.where(Project.id != project_id)
+    
+    existing = db_session.exec(query).first()
+    if existing:
+        return f"Project path '{path}' is already in use by another project."
+    
+    return None
 
 def check_admin(session):
     user_id = session.get('user_id')
@@ -16,6 +38,73 @@ def check_admin(session):
         if not user or not user.role or user.role.name != 'Admin':
             return False
     return True
+
+
+def render_add_modal(users, error=None, values=None):
+    v = values or {}
+    error_el = Div(error, style="color: red; margin-bottom: 1rem;") if error else None
+    return Article(
+        Header(H3("Add New Project")),
+        error_el,
+        Form(
+            Label("Name", Input(name="name", required=True, value=v.get("name", ""))),
+            Label("Description", Textarea(v.get("description", ""), name="description")),
+            Label("Path", Input(name="path", required=True, value=v.get("path", ""))),
+            Label("Owner", Select(
+                Option("Select Owner", value=""),
+                *[Option(u.username, value=u.id) for u in users],
+                name="user_id"
+            )),
+            Label("Status", Select(
+                Option("Active", value="active"),
+                Option("Inactive", value="inactive"),
+                Option("Done", value="done"),
+                name="status"
+            )),
+            Footer(
+                Group(
+                    Button("Cancel", cls="secondary", onclick="document.getElementById('add-modal').close()", type="button"),
+                    Button("Save Project", type="submit")
+                )
+            ),
+            hx_post="/projects/add", hx_target="#add-modal-inner", hx_swap="innerHTML",
+            method="post", action="/projects/add"
+        )
+    )
+
+
+def render_edit_modal(users, error=None, values=None):
+    v = values or {}
+    error_el = Div(error, style="color: red; margin-bottom: 1rem;") if error else None
+    return Article(
+        Header(H3("Edit Project")),
+        error_el,
+        Form(
+            Input(type="hidden", name="id", id="edit-id", value=v.get("id", "")),
+            Label("Name", Input(name="name", id="edit-name", required=True, value=v.get("name", ""))),
+            Label("Description", Textarea(v.get("description", ""), name="description", id="edit-description")),
+            Label("Path", Input(name="path", id="edit-path", required=True, value=v.get("path", ""))),
+            Label("Owner", Select(
+                Option("Select Owner", value=""),
+                *[Option(u.username, value=u.id) for u in users],
+                name="user_id", id="edit-user_id"
+            )),
+            Label("Status", Select(
+                Option("Active", value="active"),
+                Option("Inactive", value="inactive"),
+                Option("Done", value="done"),
+                name="status", id="edit-status"
+            )),
+            Footer(
+                Group(
+                    Button("Cancel", cls="secondary", onclick="document.getElementById('edit-modal').close()", type="button"),
+                    Button("Update Project", type="submit")
+                )
+            ),
+            hx_post="/projects/edit", hx_target="#edit-modal-inner", hx_swap="innerHTML",
+            id="edit-form", method="post", action="/projects/edit"
+        )
+    )
 
 def setup_project_routes(rt, render_nav):
     @rt('/projects', methods=['GET'])
@@ -85,66 +174,8 @@ def setup_project_routes(rt, render_nav):
                 ) for p in projects
             ]
 
-            add_modal = Dialog(
-                Article(
-                    Header(H3("Add New Project")),
-                    Form(
-                        Label("Name", Input(name="name", required=True)),
-                        Label("Description", Textarea(name="description")),
-                        Label("Path", Input(name="path", required=True)),
-                        Label("Owner", Select(
-                            Option("Select Owner", value=""),
-                            *[Option(u.username, value=u.id) for u in users],
-                            name="user_id"
-                        )),
-                        Label("Status", Select(
-                            Option("Active", value="active"),
-                            Option("Inactive", value="inactive"),
-                            Option("Done", value="done"),
-                            name="status"
-                        )),
-                        Footer(
-                            Group(
-                                Button("Cancel", cls="secondary", onclick="document.getElementById('add-modal').close()", type="button"),
-                                Button("Save Project", type="submit")
-                            )
-                        ),
-                        method="post", action="/projects/add"
-                    )
-                ),
-                id="add-modal"
-            )
-
-            edit_modal = Dialog(
-                Article(
-                    Header(H3("Edit Project")),
-                    Form(
-                        Input(type="hidden", name="id", id="edit-id"),
-                        Label("Name", Input(name="name", id="edit-name", required=True)),
-                        Label("Description", Textarea(name="description", id="edit-description")),
-                        Label("Path", Input(name="path", id="edit-path", required=True)),
-                        Label("Owner", Select(
-                            Option("Select Owner", value=""),
-                            *[Option(u.username, value=u.id) for u in users],
-                            name="user_id", id="edit-user_id"
-                        )),
-                        Label("Status", Select(
-                            Option("Active", value="active"),
-                            Option("Inactive", value="inactive"),
-                            Option("Done", value="done"),
-                            name="status", id="edit-status"
-                        )),
-                        Footer(
-                            Group(
-                                Button("Cancel", cls="secondary", onclick="document.getElementById('edit-modal').close()", type="button"),
-                                Button("Update Project", type="submit")
-                            )
-                        ),
-                        id="edit-form", method="post", action="/projects/edit"
-                    )
-                ),
-                id="edit-modal"
-            )
+            add_modal = Dialog(Div(render_add_modal(users), id="add-modal-inner"), id="add-modal")
+            edit_modal = Dialog(Div(render_edit_modal(users), id="edit-modal-inner"), id="edit-modal")
 
             js = Script("""
                 function openEditModal(id, name, description, path, userId, status) {
@@ -158,8 +189,17 @@ def setup_project_routes(rt, render_nav):
                 }
             """)
 
+            project_css = Style("""
+                #add-modal article, #edit-modal article {
+                    min-width: 500px;
+                    width: 60vw;
+                    max-width: 700px;
+                    min-height: 420px;
+                }
+            """)
+
             return Title("Project Management"), render_nav(current_user), Main(
-                js,
+                js, project_css,
                 Div(
                     H1("Project Management", style="margin-bottom: 0;"),
                     A("Add New Project", href="#", onclick="document.getElementById('add-modal').showModal()"),
@@ -181,6 +221,13 @@ def setup_project_routes(rt, render_nav):
     def post_add_project(session, name: str, description: str, path: str, user_id: str, status: str):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         with Session(engine) as db_session:
+            users = db_session.exec(select(User)).all()
+            error = validate_project_path(path, db_session)
+            if error:
+                return to_xml(render_add_modal(users, error=error, values={
+                    "name": name, "description": description, "path": path,
+                    "user_id": user_id, "status": status
+                }))
             new_project = Project(
                 name=name,
                 description=description,
@@ -190,7 +237,7 @@ def setup_project_routes(rt, render_nav):
             )
             db_session.add(new_project)
             db_session.commit()
-            return RedirectResponse('/projects', status_code=303)
+            return Response(content="", headers={"HX-Redirect": "/projects"})
 
     @rt('/projects/edit', methods=['POST'])
     def post_edit_project(session, id: int, name: str, description: str, path: str, user_id: str, status: str):
@@ -198,6 +245,14 @@ def setup_project_routes(rt, render_nav):
         with Session(engine) as db_session:
             project = get_project_by_id(db_session, id)
             if not project: return "Project not found"
+            
+            users = db_session.exec(select(User)).all()
+            error = validate_project_path(path, db_session, project_id=id)
+            if error:
+                return to_xml(render_edit_modal(users, error=error, values={
+                    "id": id, "name": name, "description": description, "path": path,
+                    "user_id": user_id, "status": status
+                }))
             
             project.name = name
             project.description = description
@@ -208,7 +263,7 @@ def setup_project_routes(rt, render_nav):
             
             db_session.add(project)
             db_session.commit()
-            return RedirectResponse('/projects', status_code=303)
+            return Response(content="", headers={"HX-Redirect": "/projects"})
 
     @rt('/projects/delete/{id}', methods=['POST'])
     def post_delete_project(session, id: int):

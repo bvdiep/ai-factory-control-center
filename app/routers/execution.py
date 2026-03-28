@@ -313,6 +313,8 @@ def setup_execution_routes(rt, render_nav):
 
             skill = phase.role.skill if phase.role else ""
             
+            project_path = f"{settings.PROJECT_ROOT}/{project.path}"
+
             asyncio.create_task(asyncio.to_thread(
                 run_agent_in_background,
                 project_id,
@@ -320,7 +322,7 @@ def setup_execution_routes(rt, render_nav):
                 execution.id,
                 model,
                 prompt,
-                project.path,
+                project_path,
                 skill
             ))
 

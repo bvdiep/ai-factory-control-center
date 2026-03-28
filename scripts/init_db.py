@@ -43,13 +43,13 @@ def seed_db():
         p1 = Project(
             name="AI Factory",
             description="Main control center",
-            path="/home/dd/work/diep/ai-factory-control-center",
+            path="ai-factory-control-center",
             user_id=admin_user.id
         )
         p2 = Project(
             name="Data Pipeline",
             description="ETL pipeline for AI models",
-            path="/home/dd/work/diep/data-pipeline",
+            path="data-pipeline",
             user_id=admin_user.id
         )
         session.add(p1)
