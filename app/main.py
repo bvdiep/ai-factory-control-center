@@ -503,4 +503,4 @@ def index():
 
 if __name__ == '__main__':
     is_prod = os.environ.get('NODE_ENV') == 'production'
-    serve(reload=not is_prod, reload_excludes=['*.log', '*.db', '*.db-journal', 'logs/*', 'logs/**/*'])
+    serve(port=5001, reload=not is_prod, reload_excludes=['*.log', '*.db', '*.db-journal', 'logs/*', 'logs/**/*'])

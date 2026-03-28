@@ -34,6 +34,12 @@ Nếu bạn muốn chạy ứng dụng trong môi trường production, hãy s�
 pm2 start ecosystem.config.js
 ```
 
+### Build Docker
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
 ## Cấu trúc dự án
 - `app/main.py`: Entry point của ứng dụng FastHTML.
 - `app/models/__init__.py`: Định nghĩa các bảng dữ liệu bằng SQLModel.

@@ -1,0 +1,31 @@
+services:
+  control-center:
+    build: .
+    container_name: fasthtml_openhands
+    ports:
+      - "5001:5001"
+    volumes:
+      # --- LỚP TRUYỀN TIN (Docker Control) ---
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # --- LỚP DỮ LIỆU DỰ ÁN (Nơi OpenHands code) ---
+      # Mount cùng đường dẫn tuyệt đối để Docker Host không bị nhầm lẫn
+      - /home/dd/work/diep/openhands_workspace:/home/dd/work/diep/openhands_workspace
+
+      # --- LỚP DỮ LIỆU CÁ NHÂN (SQLite & Logs) ---
+      # 1. Share file SQLite (Database của SQLModel)
+      # Lưu ý: Bạn nên mount cả thư mục chứa file db để tránh lỗi inode của SQLite
+      - /home/dd/work/diep/ai-factory-control-center-data/database:/app/data
+
+      # 2. Share thư mục Log của OpenHands
+      - /home/dd/work/diep/ai-factory-control-center-data/conversations-data:/app/logs/openhands
+
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - PROJECT_ROOT=/home/dd/work/diep/openhands_workspace
+      - DB_PATH=/app/data/system.db
+      - OPENHANDS_STORAGE_PATH=/app/logs/openhands
+    
+    # Chạy với quyền root để có thể ghi log và đọc docker socket dễ dàng
+    user: "root"
+    restart: unless-stopped

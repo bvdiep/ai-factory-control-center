@@ -10,3 +10,4 @@ litellm
 python-dotenv
 markdown
 markupsafe
+websockets<14
