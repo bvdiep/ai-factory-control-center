@@ -98,8 +98,13 @@ def setup_execution_routes(rt, render_nav):
                 Grid(
                     Div(
                         Select(
-                            Option("gemini-3-flash-preview", value="gemini/gemini-3-flash-preview"),
-                            Option("openai-gpt-5.4-mini", value="openai/gpt-5.4-mini"),
+                            Option("google-gemini-3-flash", value="gemini/gemini-3-flash-preview"),
+                            Option("minimax-m2.7", value="openrouter/minimax/minimax-m2.7"),
+                            Option("kimi-k2.5", value="openrouter/moonshotai/kimi-k2.5"),
+                            Option("gemini-3-flash", value="openrouter/google/gemini-3-flash-preview"),
+                            Option("gemini-3.1-pro", value="openrouter/google/gemini-3.1-pro-preview"),
+                            Option("gemini-2.5-pro", value="openrouter/google/gemini-2.5-pro"),
+                            Option("sonnet-4.6", value="openrouter/anthropic/claude-sonnet-4.6"),
                             name="model"
                         )
                     ),

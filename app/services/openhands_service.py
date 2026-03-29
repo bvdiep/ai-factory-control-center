@@ -51,7 +51,15 @@ def run_agent_in_background(project_id, phase_id, execution_id, model_name, prom
 
     try:
         # Setup LLM
-        api_key = settings.OPENAI_API_KEY if "gpt" in model_name else settings.GEMINI_API_KEY
+        if "openrouter/" in model_name:
+            api_key = settings.OPENROUTER_API_KEY 
+        elif "openai/" in model_name:
+            api_key = settings.OPENAI_API_KEY
+        elif "gemini/" in model_name:
+            api_key = settings.GEMINI_API_KEY
+        else:
+            api_key = settings.OPENAI_API_KEY
+
         llm = LLM(model=model_name, api_key=api_key)
 
         # Setup Workspace

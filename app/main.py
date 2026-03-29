@@ -480,6 +480,9 @@ def phase_detail(project_id: int, phase_id: int, session):
             Div(Small(Span("Total Cost: ", style="color: #666;"), Strong(f"${total_cost:.4f}")), style="background: #fee2e2; padding: 0.5rem; border-radius: 8px; text-align: center;"),
         )
         
+        next_status = 'Start' if phase.status == 'Pending' else 'Pending'
+        approve_status = 'Done' if phase.status == 'Processed' else 'Processed'
+        
         project_phase_info = Article(
             Grid(
                 Div(
@@ -498,15 +501,19 @@ def phase_detail(project_id: int, phase_id: int, session):
                         # PM buttons
                         Group(
                             Button("Cancel", 
-                                   onclick=f"if(confirm('Are you sure you want to cancel this phase?')) {{ fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: 'Cancel'}})}}).then(r => {{ if(r.ok) location.reload(); }}); }} return false;", 
+                                   hx_post=f"/projects/{project_id}/phases/{phase_id}/status",
+                                   hx_vals=json.dumps({"status": "Cancel"}),
+                                   hx_confirm="Are you sure you want to cancel this phase?",
                                    cls="outline", 
                                    disabled=phase.status == 'Cancel'),
                             Button("Approve" if phase.status != 'Done' else "Unapprove", 
-                                   onclick=f"fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: '" + ('Done' if phase.status == 'Processed' else 'Processed') + "'}}).then(r => {{ if(r.ok) location.reload(); }}); return false;", 
+                                   hx_post=f"/projects/{project_id}/phases/{phase_id}/status",
+                                   hx_vals=json.dumps({"status": approve_status}),
                                    cls="outline", 
                                    disabled=phase.status not in ['Processed', 'Done']),
                             Button("Pending" if phase.status == 'Start' else "Start", 
-                                   onclick=f"fetch('/projects/{project_id}/phases/{phase_id}/status', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{status: '" + ('Start' if phase.status == 'Pending' else 'Pending') + "'}}).then(r => {{ if(r.ok) location.reload(); }}); return false;", 
+                                   hx_post=f"/projects/{project_id}/phases/{phase_id}/status",
+                                   hx_vals=json.dumps({"status": next_status}),
                                    cls="outline", 
                                    disabled=phase.status not in ['Pending', 'Start']),
                         ) if user.id == project.user_id else None,
@@ -557,13 +564,28 @@ def phase_detail(project_id: int, phase_id: int, session):
 
 
 @rt('/projects/{project_id}/phases/{phase_id}/status', methods=['POST'])
-async def update_phase_status(project_id: int, phase_id: int, session, req):
+async def update_phase_status(project_id: int, phase_id: int, session, status: str = None, req=None):
     user_id = session.get('user_id')
     if not user_id:
         return Response(status_code=401)
 
-    data = await req.json()
-    new_status = data.get('status')
+    if not status and req:
+        try:
+            data = await req.json()
+            status = data.get('status')
+        except:
+            pass
+    
+    # Check if status is in form data (HTMX default)
+    if not status and req:
+        try:
+            form = await req.form()
+            status = form.get('status')
+        except:
+            pass
+
+    if not status:
+        return Response(status_code=400)
 
     with Session(engine) as db_session:
         project = db_session.get(Project, project_id)
@@ -574,11 +596,11 @@ async def update_phase_status(project_id: int, phase_id: int, session, req):
         if not phase or phase.project_id != project_id:
             return Response(status_code=404)
 
-        phase.status = new_status
+        phase.status = status
         db_session.add(phase)
         db_session.commit()
 
-        return Response(status_code=200)
+        return Response(content="", headers={"HX-Refresh": "true"})
 
 @rt('/projects/{project_id}/phases/{phase_id}/edit', methods=['GET'])
 def edit_phase_get(project_id: int, phase_id: int, session):
