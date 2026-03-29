@@ -8,6 +8,7 @@ python-multipart==0.0.22
 # AI & Agents (Core)
 openhands-sdk==1.15.0
 openhands-tools==1.15.0
+playwright>=1.40.0
 litellm==1.80.10
 anthropic==0.76.0
 openai==2.16.0
