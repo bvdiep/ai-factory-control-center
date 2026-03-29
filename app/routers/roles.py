@@ -26,21 +26,30 @@ def setup_role_routes(rt, render_nav):
             roles = db_session.exec(select(Role)).all()
             current_user = db_session.get(User, session.get('user_id'))
             
-            role_rows = [
-                Tr(
-                    Td(r.id),
-                    Td(r.name),
-                    Td((r.skill[:600] + "...") if r.skill and len(r.skill) > 600 else (r.skill or "")),
-                    Td(
-                        Div(
-                            A("Edit", href="#", 
-                              onclick=f"openRoleEditModal({r.id}, {json.dumps(r.name)}, {json.dumps(r.skill or '')})"),
-                            Form(A("Delete", href="#", 
-                                   onclick=f"if(confirm('Are you sure you want to delete role \\'{r.name}\\'?')) this.closest('form').submit()"),
-                                 action=f"/roles/delete/{r.id}", method="post",
-                                 style="display: inline; margin-left: 10px;")
-                        )
-                    )
+            role_cards = [
+                Div(
+                    Div(
+                        H3(r.name, cls="management-card-title"),
+                        Span(f"ID: {r.id}", cls="phase-status"),
+                        cls="management-card-header"
+                    ),
+                    Div(
+                        Div(Span("Skill", cls="management-card-label"), 
+                            P((r.skill[:600] + "...") if r.skill and len(r.skill) > 600 else (r.skill or "No skill defined"), 
+                              style="white-space: pre-wrap; margin-bottom: 0; font-size: 0.85rem;"), 
+                            cls="management-card-item"),
+                        cls="management-card-content"
+                    ),
+                    Div(
+                        A("Edit", href="#", 
+                          onclick=f"openRoleEditModal({r.id}, {json.dumps(r.name)}, {json.dumps(r.skill or '')})"),
+                        Form(A("Delete", href="#", style="color: var(--pico-error-color);",
+                               onclick=f"if(confirm('Are you sure you want to delete role \\'{r.name}\\'?')) this.closest('form').submit()"),
+                             action=f"/roles/delete/{r.id}", method="post",
+                             style="display: inline; margin-bottom: 0;"),
+                        cls="management-card-actions"
+                    ),
+                    cls="management-card"
                 ) for r in roles
             ]
 
@@ -107,14 +116,11 @@ def setup_role_routes(rt, render_nav):
                 Div(
                     H1("Role-Skill Management", style="margin-bottom: 0;"),
                     A("Add New Role", href="#", onclick="document.getElementById('role-add-modal').showModal()"),
-                    style="display: flex; justify-content: space-between; align-items: center;"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"
                 ),
                 Hr(),
                 P(error, style="color: red;") if error else None,
-                Table(
-                    Thead(Tr(Th("ID"), Th("Name"), Th("Skill"), Th("Actions", style="width: 150px;"))),
-                    Tbody(*role_rows)
-                ),
+                Div(*role_cards, cls="management-list"),
                 add_modal,
                 edit_modal,
                 cls="container"

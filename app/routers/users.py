@@ -72,17 +72,25 @@ def setup_user_routes(rt, render_nav):
                 method="get", action="/users"
             )
 
-            user_rows = [
-                Tr(
-                    Td(u.id),
-                    Td(u.username),
-                    Td(u.name or ""),
-                    Td(u.role.name if u.role else ""),
-                    Td(u.status),
-                    Td(
+            user_cards = [
+                Div(
+                    Div(
+                        H3(u.username, cls="management-card-title"),
+                        Span(u.status.upper(), cls="phase-status"),
+                        cls="management-card-header"
+                    ),
+                    Div(
+                        Div(Span("Name", cls="management-card-label"), Span(u.name or "N/A"), cls="management-card-item"),
+                        Div(Span("Role", cls="management-card-label"), Span(u.role.name if u.role else "N/A"), cls="management-card-item"),
+                        Div(Span("ID", cls="management-card-label"), Span(str(u.id)), cls="management-card-item"),
+                        cls="management-card-content"
+                    ),
+                    Div(
                         A("Edit", href="#", 
-                          onclick=f"openUserEditModal({u.id}, {json.dumps(u.username)}, {json.dumps(u.name or '')}, {u.role_id or 'null'}, '{u.status}')")
-                    )
+                          onclick=f"openUserEditModal({u.id}, {json.dumps(u.username)}, {json.dumps(u.name or '')}, {u.role_id or 'null'}, '{u.status}')"),
+                        cls="management-card-actions"
+                    ),
+                    cls="management-card"
                 ) for u in users
             ]
 
@@ -160,15 +168,12 @@ def setup_user_routes(rt, render_nav):
                 Div(
                     H1("User Management", style="margin-bottom: 0;"),
                     A("Add New User", href="#", onclick="document.getElementById('user-add-modal').showModal()"),
-                    style="display: flex; justify-content: space-between; align-items: center;"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"
                 ),
                 Hr(),
                 P(error, style="color: red;") if error else None,
                 filter_form,
-                Table(
-                    Thead(Tr(Th("ID"), Th("Username"), Th("Name"), Th("Role"), Th("Status"), Th("Actions", style="width: 120px;"))),
-                    Tbody(*user_rows)
-                ),
+                Div(*user_cards, cls="management-list"),
                 pagination,
                 add_modal,
                 edit_modal,

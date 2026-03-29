@@ -155,24 +155,30 @@ def setup_project_routes(rt, render_nav):
                 method="get", action="/projects"
             )
 
-            project_rows = [
-                Tr(
-                    Td(p.id),
-                    Td(p.name),
-                    Td(p.description or ""),
-                    Td(p.path),
-                    Td(p.user.username if p.user else "N/A"),
-                    Td(p.status),
-                    Td(
-                        Div(
-                            A("Edit", href="#",
-                                   onclick=f"openEditModal({p.id}, {json.dumps(p.name)}, {json.dumps(p.description or '')}, {json.dumps(p.path)}, {p.user_id or 'null'}, '{p.status}')"),
-                            Form(A("Delete", href="#", 
-                                   onclick="if(confirm('Are you sure you want to delete this project?')) this.closest('form').submit()"),
-                                 action=f"/projects/delete/{p.id}", method="post",
-                                 style="display: inline; margin-left: 10px;")
-                        )
-                    )
+            project_cards = [
+                Div(
+                    Div(
+                        H3(p.name, cls="management-card-title"),
+                        Span(p.status.upper(), cls="phase-status"),
+                        cls="management-card-header"
+                    ),
+                    Div(
+                        Div(Span("Description", cls="management-card-label"), Span(p.description or "No description"), cls="management-card-item"),
+                        Div(Span("Path", cls="management-card-label"), Span(p.path), cls="management-card-item"),
+                        Div(Span("Owner", cls="management-card-label"), Span(p.user.username if p.user else "N/A"), cls="management-card-item"),
+                        Div(Span("ID", cls="management-card-label"), Span(str(p.id)), cls="management-card-item"),
+                        cls="management-card-content"
+                    ),
+                    Div(
+                        A("Edit", href="#", 
+                               onclick=f"openEditModal({p.id}, {json.dumps(p.name)}, {json.dumps(p.description or '')}, {json.dumps(p.path)}, {p.user_id or 'null'}, '{p.status}')"),
+                        Form(A("Delete", href="#", style="color: var(--pico-error-color);",
+                               onclick="if(confirm('Are you sure you want to delete this project?')) this.closest('form').submit()"),
+                             action=f"/projects/delete/{p.id}", method="post",
+                             style="display: inline; margin-bottom: 0;"),
+                        cls="management-card-actions"
+                    ),
+                    cls="management-card"
                 ) for p in projects
             ]
 
@@ -198,6 +204,8 @@ def setup_project_routes(rt, render_nav):
                     max-width: 700px;
                     min-height: 420px;
                 }
+                .phase-status.active { background-color: var(--pico-primary-background); }
+                .phase-status.done { background-color: #2e7d32; color: white; }
             """)
 
             return Title("Project Management"), render_nav(current_user), Main(
@@ -205,14 +213,11 @@ def setup_project_routes(rt, render_nav):
                 Div(
                     H1("Project Management", style="margin-bottom: 0;"),
                     A("Add New Project", href="#", onclick="document.getElementById('add-modal').showModal()"),
-                    style="display: flex; justify-content: space-between; align-items: center;"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"
                 ),
                 Hr(),
                 filter_form,
-                Table(
-                    Thead(Tr(Th("ID"), Th("Name"), Th("Description"), Th("Path"), Th("Owner"), Th("Status"), Th("Actions", style="width: 120px;"))),
-                    Tbody(*project_rows)
-                ),
+                Div(*project_cards, cls="management-list"),
                 pagination,
                 add_modal,
                 edit_modal,

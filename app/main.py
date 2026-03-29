@@ -186,6 +186,69 @@ css = Style('''
         line-height: 1.4;
         border: 1px solid #333;
     }
+    .management-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .management-card {
+        padding: 1.25rem;
+        border-radius: var(--pico-border-radius);
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        position: relative;
+    }
+    .management-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    .management-card-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    .management-card-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    .management-card-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .management-card-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--pico-muted-color);
+        font-weight: 600;
+    }
+    .management-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 1.5rem;
+        border-top: 1px solid var(--pico-muted-border-color);
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    @media (max-width: 600px) {
+        .management-card-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+        .management-card-actions > * {
+            width: 100%;
+            text-align: center;
+        }
+    }
 ''')
 
 from app.core.config import settings
