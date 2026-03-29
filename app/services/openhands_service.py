@@ -129,8 +129,29 @@ def run_agent_in_background(project_id, phase_id, execution_id, model_name, prom
         )
 
         # Send initial prompt
+        # Giúp Agent không bị kẹt
+        additional_agent_help = """
+## QUY TẮC DUY TRÌ LUỒNG (CONTINUITY & FALLBACK)
+
+1. **Nguyên tắc No-Halt**: Tuyệt đối không dừng lại (halt) hoặc treo máy khi gặp dữ liệu thiếu, lỗi môi trường hoặc logic mơ hồ. Việc "Im lặng và dừng lại" được coi là thất bại nghiêm trọng của Agent.
+
+2. **Giao thức Xử lý Thiếu hụt (Recovery Steps)**:
+    - **Bước 1 (Phân tích Context)**: Quét toàn bộ lịch sử chat và các file hiện có để tìm thông tin thay thế.
+    - **Bước 2 (Giả thuyết Thực thi)**: Nếu vẫn thiếu, Agent phải tự xây dựng một "Bản nháp giả định" (Draft/Hypothesis) dựa trên logic tốt nhất của mình để giải quyết task hiện tại.
+    - **Bước 3 (Yêu cầu Phản hồi)**: Xuất ra một Block thông tin theo cấu trúc bắt buộc dưới đây để hệ thống (FastHTML) có thể bắt được:
+
+    [STATUS]: WAITING_FOR_USER
+    [REASON]: <Nêu rõ file nào thiếu hoặc logic nào đang bị mơ hồ>
+    [ACTION_TAKEN]: <Mô tả bản nháp/giả thuyết Agent vừa tự tạo tại file X hoặc logic Y>
+    [PROPOSED_OPTIONS]: 
+        - Option A: <Tiếp tục với bản nháp hiện tại của Agent>
+        - Option B: <Cung cấp thông tin mới theo hướng Z>
+        - Option C: <Tạm dừng Task này để làm Task khác ưu tiên hơn>
+
+3. **Quy tắc Tương tác**: Agent phải duy trì trạng thái "Sẵn sàng nhận lệnh" (Listening) sau khi xuất Block trên, không được tự ý thực hiện các hành động tốn tài nguyên (Heavy API Calls) cho đến khi nhận được xác nhận `[CONFIRMED]` hoặc `[REVISED]` từ User.
+"""
         if skill:
-            prompt = f"System Instruction: {skill}\n\nUser Request: {prompt}"
+            prompt = f"System Instruction: {skill}\n{additional_agent_help}\n\nUser Request: {prompt}"
 
         conversation.send_message(prompt)
 
