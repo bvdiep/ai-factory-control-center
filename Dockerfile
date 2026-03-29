@@ -41,9 +41,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 
-# 5. Cài đặt Chromium Browser (Thực hiện ngay trong build để tránh lỗi runtime)
-# Lệnh này sẽ tải Chromium binary tương ứng với version playwright trong requirements
-RUN playwright install chromium
+# 5. Cài đặt Chromium Browser thông qua module python
+RUN python -m playwright install chromium
 
 # 6. Copy mã nguồn
 COPY . .
