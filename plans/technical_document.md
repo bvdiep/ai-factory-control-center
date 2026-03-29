@@ -173,7 +173,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Với mỗi dự án, hiển thị danh sách các giai đoạn (Phases) dưới dạng danh sách các thẻ (cards) full-width, sắp xếp theo `order`.
 - Thông tin mỗi giai đoạn bao gồm: Thứ tự (Order), Nhiệm vụ (Mission), Trạng thái (Status), Người thực hiện (Assigned User).
 - Phân biệt hiển thị qua thẻ:
-    - Nếu giai đoạn do chính người dùng hiện tại phụ trách: Thẻ có viền nổi bật, có nút **Execute** (hiện tại hiển thị "Under construction") và font chữ bình thường.
+    - Nếu giai đoạn do chính người dùng hiện tại phụ trách: Thẻ có viền nổi bật, có nút **Execute** và font chữ bình thường đẻ điều hướng sang Execution.
     - Nếu giai đoạn do người khác phụ trách: Thẻ được làm mờ (opacity) và font chữ nhạt hơn để dễ phân biệt.
 
 
