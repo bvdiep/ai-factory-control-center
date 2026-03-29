@@ -130,7 +130,7 @@ def setup_execution_routes(rt, render_nav):
                     style="margin-top: 1rem;"
                 ),
                 Div(
-                    Small(" Wrong phase status", style="color: #6b7280; vertical-align: middle;") if not can_execute else "",
+                    Small(" Wrong phase status: available for Start and Processing only", style="color: blue; vertical-align: middle;") if not can_execute else "",
                     style="display: flex; align-items: center;"
                 ),
                 hx_post=f"/projects/{project_id}/phases/{phase_id}/execute",

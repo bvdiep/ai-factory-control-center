@@ -496,7 +496,10 @@ def phase_detail(project_id: int, phase_id: int, session):
                     H4("Phase Info"),
                     P(Strong("Role: "), phase.role.name if phase.role else "N/A"),
                     P(Strong("User: "), phase.user.username if phase.user else "Unassigned"),
-                    P(Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'Processed' else '#10b981' if phase.status == 'Done' else '#3b82f6' if phase.status == 'Processing' else '#eab308' if phase.status == 'Start' else '#ef4444' if phase.status == 'Cancel' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;")),
+                    P(
+                        Label(phase.status, style=f"background: {'#22c55e' if phase.status == 'Processed' else '#10b981' if phase.status == 'Done' else '#3b82f6' if phase.status == 'Processing' else '#eab308' if phase.status == 'Start' else '#ef4444' if phase.status == 'Cancel' else '#6b7280'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1rem;"),
+                        A("Execute →", href=f"/projects/{project.id}/phases/{phase.id}/execution", style="float: right; text-decoration: underline;") if user.id == phase.user_id else None
+                    ),
                     Div(
                         # PM buttons
                         Group(
@@ -517,12 +520,8 @@ def phase_detail(project_id: int, phase_id: int, session):
                                    cls="outline", 
                                    disabled=phase.status not in ['Pending', 'Start']),
                         ) if user.id == project.user_id else None,
-                        # Phase user button
-                        Group(
-                            A(Button("Execute"), href=f"/projects/{project.id}/phases/{phase.id}/execution"),
-                        ) if user.id == phase.user_id else None,
                         style="margin-top: 1rem;"
-                    )
+                    ) if user.id == project.user_id else None
                 )
             )
         )

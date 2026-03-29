@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
-# 1. Cài đặt các công cụ hệ thống & Docker CLI
-# Chúng ta cài 'docker.io' để có lệnh docker điều khiển máy host qua socket
+# 1. Cài đặt các công cụ hệ thống, Docker CLI & Playwright Dependencies
+# Thêm các thư viện X11, Gtk, và NSS cần thiết cho Chromium
 RUN apt-get update && apt-get install -y \
     curl \
     gcc \
@@ -10,9 +10,23 @@ RUN apt-get update && apt-get install -y \
     docker.io \
     rsync \
     zip \
+    # --- Playwright System Dependencies ---
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Docker Compose V2 (Bản plugin chính thức)
+# 2. Cài đặt Docker Compose V2 (Giữ nguyên logic của bạn)
 RUN mkdir -p /usr/local/lib/docker/cli-plugins/ && \
     curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && \
     chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
@@ -23,14 +37,16 @@ WORKDIR /app
 # 3. Nâng cấp bộ cài đặt Python
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# 4. Cài đặt các thư viện từ máy local
+# 4. Cài đặt các thư viện từ requirements.txt
 COPY requirements.txt .
-# Dùng --prefer-binary để tránh việc pip cố gắng build lại các gói C từ đầu
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 
-# 5. Copy mã nguồn (Giả sử file SQLite 'factory.db' nằm trong app/)
+# 5. Cài đặt Chromium Browser (Thực hiện ngay trong build để tránh lỗi runtime)
+# Lệnh này sẽ tải Chromium binary tương ứng với version playwright trong requirements
+RUN playwright install chromium
+
+# 6. Copy mã nguồn
 COPY . .
 
-# 6. Chạy ứng dụng (Điều chỉnh đường dẫn main.py cho đúng)
-# Nếu file của bạn nằm ở thư mục gốc thì dùng "python main.py"
+# 7. Chạy ứng dụng
 CMD ["python", "app/main.py"]

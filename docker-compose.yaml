@@ -4,6 +4,7 @@ services:
     container_name: fasthtml_openhands
     ports:
       - "5002:5001"
+    shm_size: '1gb'
     volumes:
       # --- LỚP TRUYỀN TIN (Docker Control) ---
       - /var/run/docker.sock:/var/run/docker.sock
