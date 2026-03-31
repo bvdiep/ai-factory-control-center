@@ -1,7 +1,7 @@
 # Tài liệu Kỹ thuật: AI Factory Control Center
 
 ## 1. Tổng quan hệ thống
-AI Factory Control Center là một hệ thống quản lý điều khiển được xây dựng dựa trên framework **FastHTML** cho giao diện web và **SQLModel** cho việc tương tác với cơ sở dữ liệu (SQLite). Hệ thống cung cấp các chức năng cơ bản về xác thực người dùng và quản lý dự án theo vai trò.
+AI Factory Control Center là một hệ thống quản lý điều khiển được xây dựng dựa trên framework **FastHTML** cho giao diện web và **SQLModel** cho việc tương tác với cơ sở dữ liệu (MySQL). Hệ thống cung cấp các chức năng cơ bản về xác thực người dùng và quản lý dự án theo vai trò.
 
 ## 2. Kiến trúc và Các khối chức năng (Functional Blocks)
 
@@ -51,9 +51,9 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 
 ### 2.6. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
-- **Mô tả**: Quản lý kết nối đến cơ sở dữ liệu SQLite (`system.db`).
+- **Mô tả**: Quản lý kết nối đến cơ sở dữ liệu MySQL.
 - **Thành phần**:
-  - Khởi tạo Engine kết nối.
+  - Khởi tạo Engine kết nối thông qua `pymysql`.
   - Cung cấp Session cho các thao tác truy vấn dữ liệu.
 
 ### 2.7. Khối Tiện ích và Khởi tạo (Scripts)
@@ -260,7 +260,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - **Tính năng Create Folder**: Cho phép tạo thư mục mới trong thư mục hiện tại.
 ## 4. Môi trường triển khai
 - **Ngôn ngữ**: Python 3
-- **Cơ sở dữ liệu**: SQLite
+- **Cơ sở dữ liệu**: MySQL
 - **Quản lý tiến trình**: Hỗ trợ chạy trực tiếp qua Python hoặc sử dụng PM2 (`ecosystem.config.js`) cho môi trường production.
 
 ## 5. Storage Structure

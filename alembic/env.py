@@ -12,10 +12,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from sqlmodel import SQLModel
 from app.models import Role, User, Project, Phase, Execution, ExecutionMessage
+from app.core.database import mysql_url
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+config.set_main_option("sqlalchemy.url", mysql_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

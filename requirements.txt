@@ -29,3 +29,4 @@ Markdown==3.10.2
 MarkupSafe==3.0.3
 PyYAML==6.0.3
 alembic==1.18.4
+pymysql==1.1.1

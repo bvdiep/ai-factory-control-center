@@ -1,10 +1,9 @@
 from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
 
-sqlite_file_name = settings.DB_PATH
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+mysql_url = f"mysql+pymysql://{settings.DB_USER}:{settings.DB_PASS}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
-engine = create_engine(sqlite_url, echo=True)
+engine = create_engine(mysql_url, echo=True)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

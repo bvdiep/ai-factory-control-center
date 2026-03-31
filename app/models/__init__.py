@@ -1,11 +1,12 @@
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column, Text
 from datetime import datetime
 
 class Role(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
-    skill: Optional[str] = None
+    skill: Optional[str] = Field(default=None, sa_column=Column(Text))
     
     users: List["User"] = Relationship(back_populates="role")
 
@@ -25,10 +26,10 @@ class User(SQLModel, table=True):
 class Project(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
-    description: Optional[str] = None
+    description: Optional[str] = Field(default=None, sa_column=Column(Text))
     interview_minutes: Optional[str] = None
     path: str = Field(unique=True, index=True)
-    config_override: Optional[str] = None
+    config_override: Optional[str] = Field(default=None, sa_column=Column(Text))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="active")
@@ -44,9 +45,9 @@ class Phase(SQLModel, table=True):
     project_id: int = Field(foreign_key="project.id", nullable=False)
     role_id: Optional[int] = Field(default=None, foreign_key="role.id")
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
-    skill: Optional[str] = Field(default=None)
+    skill: Optional[str] = Field(default=None, sa_column=Column(Text))
     status: str = Field(default="Pending") # Pending, Start, Processing, Processed, Cancel, Done
-    logging: Optional[str] = Field(default=None)
+    logging: Optional[str] = Field(default=None, sa_column=Column(Text))
     token_in: int = Field(default=0)
     token_out: int = Field(default=0)
     cache_hit: float = Field(default=0.0)
@@ -84,7 +85,7 @@ class ExecutionMessage(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     execution_id: int = Field(foreign_key="execution.id", nullable=False)
     role: str = Field(nullable=False)
-    content: str = Field(nullable=False)
-    metrics: Optional[str] = Field(default=None) # JSON string
+    content: str = Field(sa_column=Column(Text, nullable=False))
+    metrics: Optional[str] = Field(default=None, sa_column=Column(Text)) # JSON string
 
     execution: Execution = Relationship(back_populates="messages")
