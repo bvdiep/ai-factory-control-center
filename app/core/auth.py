@@ -26,5 +26,5 @@ def authenticate_user(username, password):
 
 def auth_beforeware(req, session):
     auth = session.get('user_id', None)
-    if not auth and req.url.path not in ['/login', '/static', '/favicon.ico']:
+    if not auth and req.url.path not in ['/login', '/static', '/favicon.ico', '/api/projects']:
         return RedirectResponse('/login', status_code=303)

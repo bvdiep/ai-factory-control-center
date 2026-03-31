@@ -213,6 +213,45 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Cho phép người dùng duyệt qua các thư mục và file trong thư mục gốc của dự án (`{settings.PROJECT_ROOT}/{project.path}`).
 - Hiển thị danh sách thư mục và file, trong đó thư mục được xếp lên trên, sau đó đến file, tất cả được sắp xếp theo thứ tự bảng chữ cái.
 - Hỗ trợ điều hướng vào các thư mục con thông qua breadcrumbs.
+
+   ### 3.12. API Tạo Dự án Bên ngoài (External Project Creation API)
+   - **Endpoint**: `POST /api/projects`
+   - **Bảo mật**: Yêu cầu trường `api_key` trong JSON payload phải khớp với `API_SECURITY_KEY` trong cấu hình hệ thống.
+   - **Chức năng**:
+     - Cho phép tạo mới một Project cùng với danh sách các Phase tương ứng trong một lần gọi API duy nhất.
+     - Tự động kiểm tra tính duy nhất và định dạng hợp lệ của `path` dự án.
+     - Tự động khởi tạo thư mục làm việc cho dự án tại `PROJECT_ROOT`.
+     - Toàn bộ quá trình tạo project và các phase được thực hiện trong một database transaction.
+   - **Cấu trúc Payload mẫu**:
+     ```json
+     {
+      "api_key": "your-security-key",
+      "project": {
+        "name": "Tên Dự Án",
+        "description": "Mô tả...",
+        "path": "path_tuy_chon", // Nếu bỏ qua, hệ thống sẽ tự sinh
+        "user_id": 1             // Tùy chọn
+      },
+      "phases": [
+        {
+          "order": 1,
+          "mission": "Nhiệm vụ 1",
+          "role_id": 2,          // Tùy chọn
+          "user_id": 5           // Tùy chọn
+        }
+      ]
+    }
+     ```
+
+
+	### 2.12. Khối API bên ngoài (External API)
+	- **Vị trí**: `app/routers/api.py`
+	- **Mô tả**: Cung cấp các điểm cuối (endpoints) POST cho phép các hệ thống bên ngoài tương tác với AI Factory Control Center.
+	- **Thành phần**:
+	  - API tạo mới dự án kèm theo các giai đoạn (`POST /api/projects`).
+	  - Cơ chế xác thực thông qua `api_key` được cấu hình trong hệ thống để đảm bảo an toàn.
+
+
 - Cho phép xem nội dung các file text trực tiếp trên trình duyệt (chỉ xem, không chỉnh sửa).
 - Tích hợp cơ chế bảo mật để ngăn chặn directory traversal (chỉ cho phép truy cập trong phạm vi thư mục dự án).
 - **Tính năng Upload**: Cho phép tải file lên thư mục hiện tại. Chỉ hỗ trợ các định dạng: docx, pdf, txt, md, csv, jpg, png, jpeg, gif.

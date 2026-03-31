@@ -51,6 +51,7 @@ def render_add_modal(users, error=None, values=None):
         Form(
             Label("Name", Input(name="name", required=True, value=v.get("name", ""))),
             Label("Description", Textarea(v.get("description", ""), name="description")),
+            Label("Interview Minutes", Textarea(v.get("interview_minutes", ""), name="interview_minutes", rows=5)),
             Label("Path", Input(name="path", required=True, value=v.get("path", ""))),
             Label("Owner", Select(
                 Option("Select Owner", value=""),
@@ -85,6 +86,7 @@ def render_edit_modal(users, error=None, values=None):
             Input(type="hidden", name="id", id="edit-id", value=v.get("id", "")),
             Label("Name", Input(name="name", id="edit-name", required=True, value=v.get("name", ""))),
             Label("Description", Textarea(v.get("description", ""), name="description", id="edit-description")),
+            Label("Interview Minutes", Textarea(v.get("interview_minutes", ""), name="interview_minutes", id="edit-interview_minutes", rows=5)),
             Label("Path", Input(name="path", id="edit-path", required=True, value=v.get("path", ""), readonly=True)),
             Label("Owner", Select(
                 Option("Select Owner", value=""),
@@ -171,7 +173,7 @@ def setup_project_routes(rt, render_nav):
                     ),
                     Div(
                         A("Edit", href="#", 
-                               onclick=f"openEditModal({p.id}, {json.dumps(p.name)}, {json.dumps(p.description or '')}, {json.dumps(p.path)}, {p.user_id or 'null'}, '{p.status}')"),
+                               onclick=f"openEditModal({p.id}, {json.dumps(p.name)}, {json.dumps(p.description or '')}, {json.dumps(p.path)}, {p.user_id or 'null'}, '{p.status}', {json.dumps(p.interview_minutes or '')})"),
                         Form(A("Delete", href="#", style="color: var(--pico-error-color);",
                                onclick="if(confirm('Are you sure you want to delete this project?')) this.closest('form').submit()"),
                              action=f"/projects/delete/{p.id}", method="post",
@@ -186,10 +188,11 @@ def setup_project_routes(rt, render_nav):
             edit_modal = Dialog(Div(render_edit_modal(users), id="edit-modal-inner"), id="edit-modal")
 
             js = Script("""
-                function openEditModal(id, name, description, path, userId, status) {
+                function openEditModal(id, name, description, path, userId, status, interviewMinutes) {
                     document.getElementById('edit-id').value = id;
                     document.getElementById('edit-name').value = name;
                     document.getElementById('edit-description').value = description;
+                    document.getElementById('edit-interview_minutes').value = interviewMinutes || '';
                     document.getElementById('edit-path').value = path;
                     document.getElementById('edit-user_id').value = userId || '';
                     document.getElementById('edit-status').value = status;
@@ -225,7 +228,7 @@ def setup_project_routes(rt, render_nav):
             )
 
     @rt('/projects/add', methods=['POST'])
-    def post_add_project(session, name: str, description: str, path: str, user_id: str, status: str):
+    def post_add_project(session, name: str, description: str, path: str, user_id: str, status: str, interview_minutes: str = None):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         with Session(engine) as db_session:
             users = db_session.exec(select(User)).all()
@@ -233,11 +236,12 @@ def setup_project_routes(rt, render_nav):
             if error:
                 return to_xml(render_add_modal(users, error=error, values={
                     "name": name, "description": description, "path": path,
-                    "user_id": user_id, "status": status
+                    "user_id": user_id, "status": status, "interview_minutes": interview_minutes
                 }))
             new_project = Project(
                 name=name,
                 description=description,
+                interview_minutes=interview_minutes,
                 path=path,
                 user_id=int(user_id) if user_id else None,
                 status=status
@@ -251,7 +255,7 @@ def setup_project_routes(rt, render_nav):
             return Response(content="", headers={"HX-Redirect": "/projects"})
 
     @rt('/projects/edit', methods=['POST'])
-    def post_edit_project(session, id: int, name: str, description: str, path: str, user_id: str, status: str):
+    def post_edit_project(session, id: int, name: str, description: str, path: str, user_id: str, status: str, interview_minutes: str = None):
         if not check_admin(session): return RedirectResponse('/dashboard', status_code=303)
         with Session(engine) as db_session:
             project = get_project_by_id(db_session, id)
@@ -259,6 +263,7 @@ def setup_project_routes(rt, render_nav):
             
             project.name = name
             project.description = description
+            project.interview_minutes = interview_minutes
             project.user_id = int(user_id) if user_id else None
             project.status = status
             project.updated_at = datetime.utcnow()

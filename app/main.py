@@ -17,6 +17,7 @@ from app.routers.activity import setup_activity_routes
 from app.routers.execution import setup_execution_routes
 from app.routers.roles import setup_role_routes
 from app.routers.files import setup_file_routes
+from app.routers.api import setup_api_routes
 
 css = Style('''
     .login-page {
@@ -255,7 +256,7 @@ from app.core.config import settings
 
 app, rt = fast_app(
     hdrs=(css, Script(src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js")),
-    before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico']),
+    before=Beforeware(auth_beforeware, skip=['/login', '/static', '/favicon.ico', '/api/projects']),
     secret_key=settings.SECRET_KEY,
     static_path="app/static"
 )
@@ -282,6 +283,7 @@ setup_activity_routes(rt, render_nav)
 setup_execution_routes(rt, render_nav)
 setup_role_routes(rt, render_nav)
 setup_file_routes(rt, render_nav)
+setup_api_routes(rt)
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(
@@ -468,6 +470,7 @@ def project_detail(id: int, session):
             H1(f"Project: {project.name}"),
             Div(
                 P(Strong("Description: "), project.description),
+                P(Strong("Interview Minutes: "), project.interview_minutes),
                 P(Strong("Path: "), project.path),
                 P(Strong("Status: "), project.status),
             ),
@@ -485,7 +488,7 @@ def project_detail(id: int, session):
         )
 
 @rt('/projects/{project_id}/phases', methods=['POST'])
-def add_phase(project_id: int, order: int, mission: str, role_id: int, user_id: str, session):
+def add_phase(project_id: int, order: int, mission: str, role_id: int = None, user_id: str = None, session = None):
     with Session(engine) as db_session:
         # Check order constraint
         next_phase = db_session.exec(
@@ -553,6 +556,7 @@ def phase_detail(project_id: int, phase_id: int, session):
                     H4("Project"),
                     P(Strong("Name: "), project.name if project else "N/A"),
                     P(Strong("Description: "), (project.description or "N/A") if project else "N/A"),
+                    P(Strong("Interview Minutes: "), (project.interview_minutes or "N/A") if project else "N/A"),
                     P(Strong("Path: "), project.path if project else "N/A"),
                     P(Strong("Status: "), project.status if project else "N/A"),
                 ),
@@ -716,7 +720,7 @@ def edit_phase_get(project_id: int, phase_id: int, session):
         )
 
 @rt('/projects/{project_id}/phases/{phase_id}/edit', methods=['POST'])
-def edit_phase_post(project_id: int, phase_id: int, order: int, mission: str, role_id: int, user_id: str, skill: str, session):
+def edit_phase_post(project_id: int, phase_id: int, order: int, mission: str, role_id: int = None, user_id: str = None, skill: str = None, session = None):
     with Session(engine) as db_session:
         phase = db_session.get(Phase, phase_id)
         if not phase or phase.status != 'Pending':

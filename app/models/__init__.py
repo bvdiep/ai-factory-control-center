@@ -26,6 +26,7 @@ class Project(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     description: Optional[str] = None
+    interview_minutes: Optional[str] = None
     path: str = Field(unique=True, index=True)
     config_override: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -41,7 +42,7 @@ class Phase(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     mission: str = Field(nullable=False)
     project_id: int = Field(foreign_key="project.id", nullable=False)
-    role_id: int = Field(foreign_key="role.id", nullable=False)
+    role_id: Optional[int] = Field(default=None, foreign_key="role.id")
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     skill: Optional[str] = Field(default=None)
     status: str = Field(default="Pending") # Pending, Start, Processing, Processed, Cancel, Done
@@ -55,7 +56,7 @@ class Phase(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     project: Project = Relationship(back_populates="phases")
-    role: Role = Relationship()
+    role: Optional[Role] = Relationship()
     user: Optional[User] = Relationship()
     executions: List["Execution"] = Relationship(back_populates="phase", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 

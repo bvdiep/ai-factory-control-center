@@ -9,6 +9,7 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "super-secret-key")
+    API_SECURITY_KEY: str = os.getenv("API_SECURITY_KEY", "your-default-api-key-for-external-calls")
     DB_PATH: str = os.getenv("DB_PATH", "./system.db")
     PROJECT_ROOT: str = os.getenv("PROJECT_ROOT", "/home/dd/work/diep/openhands_workspace")
 
