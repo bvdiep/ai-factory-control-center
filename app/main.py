@@ -18,6 +18,7 @@ from app.routers.execution import setup_execution_routes
 from app.routers.roles import setup_role_routes
 from app.routers.files import setup_file_routes
 from app.routers.api import setup_api_routes
+from app.routers.telegram import setup_telegram_routes
 
 css = Style('''
     .login-page {
@@ -284,6 +285,14 @@ setup_execution_routes(rt, render_nav)
 setup_role_routes(rt, render_nav)
 setup_file_routes(rt, render_nav)
 setup_api_routes(rt)
+setup_telegram_routes(rt)
+from app.routers.telegram import poll_telegram_updates
+import asyncio
+
+@app.on_event("startup")
+async def start_background_tasks():
+    asyncio.create_task(poll_telegram_updates())
+
 @rt('/login', methods=['GET'])
 def get_login():
     return Title("Login"), Main(

@@ -24,6 +24,10 @@ services:
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - PROJECT_ROOT=/home/dd/work/diep/openhands_workspace
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DIFY_API_KEY=${DIFY_API_KEY}
+      - DIFY_API_URL=${DIFY_API_URL:-https://api.dify.ai/v1}
+      - VLM_MODEL=${VLM_MODEL:-gemini/gemini-3-flash-preview}
       - DB_PATH=/app/data/system.db
       - OPENHANDS_STORAGE_PATH=/app/logs/openhands
     

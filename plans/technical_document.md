@@ -48,6 +48,8 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
   - **Phase**: Quản lý các giai đoạn thực hiện của dự án (mission, project_id, role_id, user_id, skill, status, logging, tokens, order, created_at, updated_at). Các trạng thái bao gồm: `Pending`, `Start`, `Processing`, `Processed`, `Cancel`, `Done`.
   - **Execution**: Quản lý các lần thực thi của một Phase (phase_id, project_id, status, start_date, total_input_tokens, total_output_tokens, total_reasoning_tokens, total_cost, cache_read_tokens, cache_write_tokens, cache_hit_percent, latency, model_name). Trường `project_id` là foreign key trực tiếp đến `project.id`, giúp xác định Execution thuộc Project nào mà không cần join qua Phase. Khi tạo Execution mới, `project_id` luôn được set đồng thời với `phase_id`.
   - **ExecutionMessage**: Lưu trữ lịch sử hội thoại và log của mỗi lần thực thi (execution_id, role, content, metrics).
+  - **BridgeMessage**: Lưu trữ tin nhắn giữa Telegram và Dify (project_id, sender, message_type, content, extracted_data, created_at). Trường `message_type` có thể là: `text`, `image`, `audio`, `video`, `document`.
+  - **BridgeMessageFile**: Lưu trữ thông tin từng file đính kèm của một `BridgeMessage` (message_id, file_type, original_name, file_path, telegram_file_id, created_at). Quan hệ one-to-many với `BridgeMessage`. Trường `file_path` là đường dẫn tuyệt đối trên server nơi file được lưu.
 
 ### 2.6. Khối Cơ sở dữ liệu (Database Core)
 - **Vị trí**: `app/core/database.py`
@@ -164,6 +166,17 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 - Chỉnh sửa dự án qua modal popup. Ràng buộc về `path` tương tự như khi thêm mới.
 - Xóa dự án (có xác nhận).
 - Tự động cập nhật trường `updated_at` mỗi khi chỉnh sửa dự án.
+### 2.13. Khối Bridge Telegram - Dify
+- **Vị trí**: `app/routers/telegram.py`, `app/services/telegram_service.py`, `app/services/dify_service.py`, `app/services/llm_service.py`
+- **Mô tả**: Đóng vai trò cầu nối (bridge) giữa Telegram và Dify, cho phép nhận tin nhắn từ Telegram, xử lý và chuyển tiếp sang Dify, sau đó nhận phản hồi từ Dify và gửi lại Telegram.
+- **Thành phần**:
+  - `BridgeMessage` model: Lưu trữ toàn bộ tin nhắn của cả hai bên (Telegram và Dify), liên kết với `Project`.
+  - `BridgeMessageFile` model: Lưu trữ thông tin file đính kèm theo từng tin nhắn (one-to-many với `BridgeMessage`). Hỗ trợ: image, document, audio, video.
+  - `telegram_service.py`: Xử lý gửi tin nhắn và lấy URL file từ Telegram API.
+  - `dify_service.py`: Xử lý gọi API chat-messages của Dify.
+  - `llm_service.py`: Sử dụng `litellm` để gọi các model VLM (Vision-Language Model) trích xuất mô tả từ hình ảnh gửi qua Telegram.
+  - `telegram.py`: Router xử lý webhook từ Telegram, điều phối luồng xử lý tin nhắn text và file đính kèm (photo, document, audio, voice, video). Khi nhận được file, hệ thống tự động tải về và lưu vào thư mục được cấu hình bởi `MEDIA_UPLOAD_PATH`.
+
 
 
 ### 3.8. Chức năng Hoạt động của Tôi (My Activity)
@@ -266,6 +279,7 @@ Hệ thống được chia thành các khối chức năng chính sau, áp dụn
 ## 5. Storage Structure
 - `$OPENHANDS_STORAGE_PATH/{project_id}/{phase_id}/sessions/`: Stores OpenHands session data.
 - `$OPENHANDS_STORAGE_PATH/{project_id}/{phase_id}/logs/`: Stores execution logs.
+- `$MEDIA_UPLOAD_PATH/{YYYYMMDD}/{telegram_file_id}.{ext}`: Lưu trữ file đính kèm nhận từ Telegram (ảnh, tài liệu, audio, video). Thư mục gốc được cấu hình qua biến môi trường `MEDIA_UPLOAD_PATH`, tổ chức theo ngày UTC.
 
 ## 6. Metrics JSON Structure
 ```json

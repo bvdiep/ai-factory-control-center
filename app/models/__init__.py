@@ -89,3 +89,27 @@ class ExecutionMessage(SQLModel, table=True):
     metrics: Optional[str] = Field(default=None, sa_column=Column(Text)) # JSON string
 
     execution: Execution = Relationship(back_populates="messages")
+
+class BridgeMessage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    project_id: Optional[int] = Field(default=None, foreign_key="project.id")
+    sender: str = Field(nullable=False) # 'telegram' or 'dify'
+    message_type: str = Field(default="text") # 'text', 'image', 'audio', 'video', 'document'
+    content: str = Field(sa_column=Column(Text, nullable=False)) # text content or file path
+    extracted_data: Optional[str] = Field(default=None, sa_column=Column(Text)) # data extracted from VLM/LLM
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    project: Optional[Project] = Relationship()
+    files: List["BridgeMessageFile"] = Relationship(back_populates="message", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+class BridgeMessageFile(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    message_id: int = Field(foreign_key="bridgemessage.id", nullable=False)
+    file_type: str = Field(nullable=False)                    # 'image', 'document', 'audio', 'video'
+    original_name: Optional[str] = Field(default=None)       # original filename if available
+    file_path: str = Field(nullable=False)                    # local path on server
+    telegram_file_id: Optional[str] = Field(default=None)    # Telegram file_id for reference
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    message: BridgeMessage = Relationship(back_populates="files")

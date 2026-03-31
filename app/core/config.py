@@ -17,5 +17,6 @@ class Settings:
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_PORT: str = os.getenv("DB_PORT", "3306")
     PROJECT_ROOT: str = os.getenv("PROJECT_ROOT", "/home/dd/work/diep/openhands_workspace")
+    MEDIA_UPLOAD_PATH: str = os.getenv("MEDIA_UPLOAD_PATH", "./uploads/bridge_media")
 
 settings = Settings()
